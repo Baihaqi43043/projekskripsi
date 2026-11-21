@@ -1,0 +1,73 @@
+================================================================================
+CATATAN SUMBER DATA & RINGKASAN DATASET PROYEK
+Model Hybrid LSTM - Random Forest untuk Pemilihan Varietas Tanaman Unggulan
+================================================================================
+
+1. RINGKASAN FILE DATA SAAT INI (FOLDER: data/raw/)
+--------------------------------------------------------------------------------
+A. data/raw/aceh_utara_agroklimat_bulanan.csv
+   - Jumlah data : 360 baris (5 lokasi x 72 bulan, periode Jan 2020 - Des 2025)
+   - Sumber      : NASA POWER API (https://power.larc.nasa.gov/api/temporal/daily/point)
+                   Community: AG (Agroclimatology), ditarik harian lalu diagregasi bulanan.
+   - Kolom       :
+     * id_lokasi             : ID titik pengamatan (L001 - L005)
+     * tahun, bulan          : Periode waktu (2020 - 2025, bulan 1 - 12)
+     * curah_hujan           : Total curah hujan bulanan (PRECTOTCORR, mm)
+     * suhu_rata_rata        : Rata-rata suhu udara bulanan (T2M, °C)
+     * suhu_maksimal         : Rata-rata suhu maksimal bulanan (T2M_MAX, °C)
+     * suhu_minimum          : Rata-rata suhu minimal bulanan (T2M_MIN, °C)
+     * kelembaban_rata_rata  : Rata-rata kelembaban relatif bulanan (RH2M, %)
+     * lama_penyinaran       : Rata-rata radiasi penyinaran matahari (ALLSKY_SFC_SW_DWN)
+   - Status      : DATA RIIL (100% terisi dari NASA POWER API).
+
+B. data/raw/aceh_utara_tanah_statis.csv
+   - Jumlah data : 5 baris (5 titik sampel di Kabupaten Aceh Utara)
+     * L001 : Lhoksukon       (5.0528, 97.3117) - elevasi 8.0 mdpl
+     * L002 : Matangkuli      (5.0272, 97.2714) - elevasi 12.0 mdpl
+     * L003 : Syamtalira Aron (5.0911, 97.2133) - elevasi 6.0 mdpl
+     * L004 : Dewantara       (5.2356, 97.0086) - elevasi 4.0 mdpl
+     * L005 : Kuta Makmur     (5.1067, 97.1056) - elevasi 25.0 mdpl
+   - Sumber      : ISRIC SoilGrids v2.0 REST API (kedalaman 0-15 cm) + Konfigurasi YAML
+   - Status Isi  :
+     * DATA RIIL SoilGrids    : L002 (Matangkuli) & L005 (Kuta Makmur) untuk kolom
+                                tekstur_tanah, ph_tanah, dan karbon_organik.
+     * NILAI FALLBACK/DEFAULT : L001, L003, L004 (karena API SoilGrids sempat timeout:
+                                tekstur=Lempung, ph_tanah=6.1, karbon_organik=1.5).
+     * PLACEHOLDER SEMENTARA  : nitrogen (0.15), fosfor (12.0), kalium (0.35),
+                                drainase (Baik), risiko_bencana_hama (Rendah).
+                                (Kolom ini belum tersedia di SoilGrids, menunggu data
+                                 Dinas Pertanian / uji lab tanah).
+
+
+2. LABEL TARGET (VARIETAS) SAAT INI
+--------------------------------------------------------------------------------
+- Lokasi kode : Fungsi `beri_label_varietas_prototipe()` di main.py
+- Sumber      : Aturan prototipe sementara (berbasis curah_hujan, suhu_rata_rata,
+                dan ph_tanah) untuk keperluan uji jalan pipeline model.
+- Kelas (6)   : Padi_Inpari_32, Padi_Ciherang, Padi_Inpari_42,
+                Jagung_BISI_18, Jagung_NK_212, Kedelai_Anjasmoro.
+- Status      : PROTOTIPE (bukan label lapangan resmi).
+
+
+3. SUMBER DATA TAMBAHAN YANG SUDAH DISIAPKAN DI KODE (OPSIONAL)
+--------------------------------------------------------------------------------
+- Hugging Face (`liaad/agricultural-data`):
+  Fungsi `fetch_hf_crop_recommendation()` sudah tersedia di `src/data_fetcher.py`
+  jika sewaktu-waktu ingin menguji klasifikasi tabular (N, P, K, pH, suhu,
+  kelembaban, curah hujan).
+
+
+4. DAFTAR DATA YANG HARUS DILENGKAPI UNTUK VERSI FINAL (SESUAI PDF)
+--------------------------------------------------------------------------------
+[ ] Perluas titik lokasi dari 5 menjadi 20 titik pengamatan di Aceh Utara.
+[ ] Ganti/validasi data agroklimat dengan data resmi BMKG (terutama satuan
+    lama_penyinaran dalam jam/hari).
+[ ] Isi nilai riil nitrogen, fosfor, kalium, drainase, dan risiko_bencana_hama
+    dari Dinas Pertanian dan Perkebunan Aceh / observasi lapangan.
+[ ] Tambahkan dataset karakteristik 25-30 varietas (Padi, Jagung, Kedelai) dari
+    Kementerian Pertanian RI (umur panen, potensi hasil, ketahanan hama,
+    kebutuhan air, ketinggian optimal).
+[ ] Ganti label prototipe dengan label ground-truth varietas unggulan aktual
+    per lokasi/musim tanam.
+================================================================================
+
