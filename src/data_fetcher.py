@@ -19,14 +19,14 @@ def _klasifikasi_tekstur(clay: float, sand: float, silt: float) -> str:
     return "Lempung"
 
 
-def fetch_nasa_power_monthly(
+def fetch_nasa_power_daily(
     lat: float,
     lon: float,
     start_date: str = "20200101",
     end_date: str = "20251231",
     id_lokasi: str = "L001",
 ) -> pd.DataFrame:
-    """Ambil data agroklimat harian dari NASA POWER API dan agregasi menjadi bulanan."""
+    """Ambil data agroklimat harian dari NASA POWER API."""
     url = "https://power.larc.nasa.gov/api/temporal/daily/point"
     params = {
         "parameters": "PRECTOTCORR,T2M,T2M_MAX,T2M_MIN,RH2M,ALLSKY_SFC_SW_DWN",
@@ -46,17 +46,7 @@ def fetch_nasa_power_monthly(
     df.index = pd.to_datetime(df.index, format="%Y%m%d")
     df = df.replace(-999.0, pd.NA).dropna()
 
-    monthly = df.resample("ME").agg(
-        {
-            "PRECTOTCORR": "sum",
-            "T2M": "mean",
-            "T2M_MAX": "mean",
-            "T2M_MIN": "mean",
-            "RH2M": "mean",
-            "ALLSKY_SFC_SW_DWN": "mean",
-        }
-    )
-    monthly = monthly.rename(
+    df = df.rename(
         columns={
             "PRECTOTCORR": "curah_hujan",
             "T2M": "suhu_rata_rata",
@@ -64,6 +54,48 @@ def fetch_nasa_power_monthly(
             "T2M_MIN": "suhu_minimum",
             "RH2M": "kelembaban_rata_rata",
             "ALLSKY_SFC_SW_DWN": "lama_penyinaran",
+        }
+    )
+    df["id_lokasi"] = id_lokasi
+    df["tanggal"] = df.index.strftime("%Y-%m-%d")
+    df["tahun"] = df.index.year
+    df["bulan"] = df.index.month
+
+    cols = [
+        "id_lokasi",
+        "tanggal",
+        "tahun",
+        "bulan",
+        "curah_hujan",
+        "suhu_rata_rata",
+        "suhu_maksimal",
+        "suhu_minimum",
+        "kelembaban_rata_rata",
+        "lama_penyinaran",
+    ]
+    return df[cols].reset_index(drop=True)
+
+
+def fetch_nasa_power_monthly(
+    lat: float,
+    lon: float,
+    start_date: str = "20200101",
+    end_date: str = "20251231",
+    id_lokasi: str = "L001",
+) -> pd.DataFrame:
+    """Agregasi data agroklimat harian NASA POWER menjadi bulanan."""
+    daily_df = fetch_nasa_power_daily(
+        lat=lat, lon=lon, start_date=start_date, end_date=end_date, id_lokasi=id_lokasi
+    )
+    daily_df["tanggal_dt"] = pd.to_datetime(daily_df["tanggal"])
+    monthly = daily_df.set_index("tanggal_dt").resample("ME").agg(
+        {
+            "curah_hujan": "sum",
+            "suhu_rata_rata": "mean",
+            "suhu_maksimal": "mean",
+            "suhu_minimum": "mean",
+            "kelembaban_rata_rata": "mean",
+            "lama_penyinaran": "mean",
         }
     )
     monthly["id_lokasi"] = id_lokasi
@@ -147,19 +179,50 @@ def collect_aceh_utara_sample(config: dict[str, Any]) -> tuple[pd.DataFrame, pd.
     raw_dir = config["data"]["raw_dir"]
     os.makedirs(raw_dir, exist_ok=True)
 
+    daily_frames = []
     climate_frames = []
     soil_records = []
 
     for loc in config["data"]["locations"]:
         loc_id = loc["id"]
         print(f"Mengambil data NASA POWER untuk {loc_id} ({loc['name']})...")
-        c_df = fetch_nasa_power_monthly(
+        d_df = fetch_nasa_power_daily(
             lat=loc["lat"],
             lon=loc["lon"],
             start_date=config["data"]["start_date"],
             end_date=config["data"]["end_date"],
             id_lokasi=loc_id,
         )
+        daily_frames.append(d_df)
+
+        d_tmp = d_df.copy()
+        d_tmp["tanggal_dt"] = pd.to_datetime(d_tmp["tanggal"])
+        c_df = d_tmp.set_index("tanggal_dt").resample("ME").agg(
+            {
+                "curah_hujan": "sum",
+                "suhu_rata_rata": "mean",
+                "suhu_maksimal": "mean",
+                "suhu_minimum": "mean",
+                "kelembaban_rata_rata": "mean",
+                "lama_penyinaran": "mean",
+            }
+        )
+        c_df["id_lokasi"] = loc_id
+        c_df["tahun"] = c_df.index.year
+        c_df["bulan"] = c_df.index.month
+        c_df = c_df[
+            [
+                "id_lokasi",
+                "tahun",
+                "bulan",
+                "curah_hujan",
+                "suhu_rata_rata",
+                "suhu_maksimal",
+                "suhu_minimum",
+                "kelembaban_rata_rata",
+                "lama_penyinaran",
+            ]
+        ].reset_index(drop=True)
         climate_frames.append(c_df)
 
         s_rec = None
@@ -192,9 +255,11 @@ def collect_aceh_utara_sample(config: dict[str, Any]) -> tuple[pd.DataFrame, pd.
         s_rec["ketinggian_tempat"] = loc.get("ketinggian_tempat", 5.0)
         soil_records.append(s_rec)
 
+    daily_df = pd.concat(daily_frames, ignore_index=True)
     climate_df = pd.concat(climate_frames, ignore_index=True)
     soil_df = pd.DataFrame(soil_records)
 
+    daily_df.to_csv(os.path.join(raw_dir, "aceh_utara_agroklimat_harian.csv"), index=False)
     climate_df.to_csv(os.path.join(raw_dir, "aceh_utara_agroklimat_bulanan.csv"), index=False)
     soil_df.to_csv(os.path.join(raw_dir, "aceh_utara_tanah_statis.csv"), index=False)
     return climate_df, soil_df
