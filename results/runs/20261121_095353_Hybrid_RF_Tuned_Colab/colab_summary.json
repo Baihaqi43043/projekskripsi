@@ -1,0 +1,45 @@
+{
+  "run_id": "20261121_095353",
+  "best_params": {
+    "n_estimators": 500,
+    "min_samples_split": 2,
+    "min_samples_leaf": 1,
+    "max_features": "sqrt",
+    "max_depth": 15,
+    "class_weight": "balanced"
+  },
+  "benchmark": [
+    {
+      "Model": "Baseline RF (Statis + Mean Iklim)",
+      "Accuracy": 0.4167,
+      "Precision (Weighted)": 0.3665,
+      "Recall (Weighted)": 0.4167,
+      "F1 (Weighted)": 0.3728,
+      "Top-3 Accuracy": 0.6833
+    },
+    {
+      "Model": "Baseline GradientBoosting",
+      "Accuracy": 0.3167,
+      "Precision (Weighted)": 0.3242,
+      "Recall (Weighted)": 0.3167,
+      "F1 (Weighted)": 0.2738,
+      "Top-3 Accuracy": 0.85
+    },
+    {
+      "Model": "Hybrid LSTM + RF (Default)",
+      "Accuracy": 0.3333,
+      "Precision (Weighted)": 0.381,
+      "Recall (Weighted)": 0.3333,
+      "F1 (Weighted)": 0.3457,
+      "Top-3 Accuracy": 0.8333
+    },
+    {
+      "Model": "Hybrid LSTM + RF (Tuned)",
+      "Accuracy": 0.3333,
+      "Precision (Weighted)": 0.381,
+      "Recall (Weighted)": 0.3333,
+      "F1 (Weighted)": 0.3457,
+      "Top-3 Accuracy": 0.85
+    }
+  ]
+}

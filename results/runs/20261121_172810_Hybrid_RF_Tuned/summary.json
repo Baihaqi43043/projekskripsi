@@ -1,0 +1,68 @@
+{
+  "run_id": "20261121_172810",
+  "timestamp": "2026-11-21 17:28:10",
+  "git": {
+    "commit": "7eca85d",
+    "branch": "main",
+    "dirty": true
+  },
+  "stage": "Hybrid_RF_Tuned",
+  "environment": "local",
+  "dataset": {
+    "train_samples": 960,
+    "test_samples": 240,
+    "num_classes": 12
+  },
+  "hyperparameters": {
+    "n_estimators": 200,
+    "min_samples_split": 2,
+    "min_samples_leaf": 1,
+    "max_features": 0.5,
+    "max_depth": 15,
+    "class_weight": null
+  },
+  "loss_akhir": null,
+  "metrics": {
+    "accuracy": 0.35,
+    "precision_weighted": 0.5607,
+    "recall_weighted": 0.35,
+    "f1_weighted": 0.4063,
+    "top_3_accuracy": 0.6625
+  },
+  "top_features": [
+    [
+      "ph_tanah",
+      0.1343
+    ],
+    [
+      "risiko_bencana_hama",
+      0.109
+    ],
+    [
+      "ketinggian_tempat",
+      0.1004
+    ],
+    [
+      "fitur_temporal_lstm_17",
+      0.0652
+    ],
+    [
+      "fosfor",
+      0.0507
+    ],
+    [
+      "fitur_temporal_lstm_19",
+      0.0457
+    ],
+    [
+      "drainase",
+      0.0437
+    ],
+    [
+      "fitur_temporal_lstm_5",
+      0.0384
+    ]
+  ],
+  "duration_sec": 31.8,
+  "catatan": "RandomizedSearchCV 30x5 lokal, seed=42"
+}

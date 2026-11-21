@@ -6,22 +6,22 @@ Model Hybrid LSTM - Random Forest untuk Pemilihan Varietas Tanaman Unggulan
 1. RINGKASAN FILE DATA SAAT INI (FOLDER: data/raw/)
 --------------------------------------------------------------------------------
 A. data/raw/aceh_utara_agroklimat_harian.csv
-   - Jumlah data : 10.960 baris (5 lokasi x 2.192 hari, 1 Jan 2020 - 31 Des 2025)
+   - Jumlah data : 43.840 baris (20 lokasi x 2.192 hari, 1 Jan 2020 - 31 Des 2025)
    - Sumber      : NASA POWER API (https://power.larc.nasa.gov/api/temporal/daily/point)
                    Community: AG (Agroclimatology).
-   - Kolom       : id_lokasi, tanggal (YYYY-MM-DD), tahun, bulan, hari, curah_hujan,
+   - Kolom       : id_lokasi, tanggal (YYYY-MM-DD), tahun, bulan, curah_hujan,
                    suhu_rata_rata, suhu_maksimal, suhu_minimum,
-                   kelembaban_rata_rata, lama_penyinaran, nama_lokasi.
-   - Status      : DATA RIIL (100% terisi dari NASA POWER API).
+                   kelembaban_rata_rata, lama_penyinaran.
+   - Status      : DATA RIIL (100% terisi dari NASA POWER API untuk 20 kecamatan).
    - Split LSTM (data/raw/lstm/):
-     * training/ (2020 - 2024) : 9.135 baris (01 Jan 2020 s/d 31 Des 2024)
-     * testing/  (2025)        : 1.825 baris (01 Jan 2025 s/d 31 Des 2025)
+     * Catatan   : Folder split harian lama (5 lokasi) dari branch develop_rahmat
+                   masih ada di data/raw/lstm/ (9.135 train / 1.825 test).
 
 B. data/raw/aceh_utara_agroklimat_bulanan.csv
-   - Jumlah data : 360 baris (5 lokasi x 72 bulan, periode Jan 2020 - Des 2025)
+   - Jumlah data : 1.440 baris (20 lokasi x 72 bulan, periode Jan 2020 - Des 2025)
    - Sumber      : Agregasi bulanan dari data harian NASA POWER API.
    - Kolom       :
-     * id_lokasi             : ID titik pengamatan (L001 - L005)
+     * id_lokasi             : ID titik pengamatan (L001 - L020)
      * tahun, bulan          : Periode waktu (2020 - 2025, bulan 1 - 12)
      * curah_hujan           : Total curah hujan bulanan (PRECTOTCORR, mm)
      * suhu_rata_rata        : Rata-rata suhu udara bulanan (T2M, °C)
@@ -29,98 +29,94 @@ B. data/raw/aceh_utara_agroklimat_bulanan.csv
      * suhu_minimum          : Rata-rata suhu minimal bulanan (T2M_MIN, °C)
      * kelembaban_rata_rata  : Rata-rata kelembaban relatif bulanan (RH2M, %)
      * lama_penyinaran       : Rata-rata radiasi penyinaran matahari (ALLSKY_SFC_SW_DWN)
-   - Status      : DATA RIIL (100% terisi dari NASA POWER API).
+   - Status      : DATA RIIL (100% terisi dari NASA POWER API untuk 20 kecamatan).
 
 C. data/raw/aceh_utara_tanah_statis.csv
-   - Jumlah data : 5 baris (5 titik sampel di Kabupaten Aceh Utara)
-     * L001 : Lhoksukon       (5.0528, 97.3117) - elevasi 8.0 mdpl
-     * L002 : Matangkuli      (5.0272, 97.2714) - elevasi 12.0 mdpl
-     * L003 : Syamtalira Aron (5.0911, 97.2133) - elevasi 6.0 mdpl
-     * L004 : Dewantara       (5.2356, 97.0086) - elevasi 4.0 mdpl
-     * L005 : Kuta Makmur     (5.1067, 97.1056) - elevasi 25.0 mdpl
-   - Sumber      : ISRIC SoilGrids v2.0 REST API (kedalaman 0-15 cm) + Konfigurasi YAML
+   - Jumlah data : 20 baris (20 kecamatan di Kabupaten Aceh Utara: L001 - L020)
+     Lhoksukon, Matangkuli, Syamtalira Aron, Dewantara, Kuta Makmur, Muara Batu,
+     Samudera, Tanah Luas, Nibong, Syamtalira Bayu, Meurah Mulia, Tanah Pasir,
+     Lapang, Baktiya, Baktiya Barat, Seunuddon, Tanah Jambo Aye, Langkahan,
+     Cot Girek, dan Sawang.
    - Status Isi  :
-     * DATA RIIL SoilGrids    : Semua 5 lokasi (L001 - L005) sudah terisi data riil
-                                untuk kolom tekstur_tanah, ph_tanah, dan karbon_organik.
-     * PLACEHOLDER SEMENTARA  : nitrogen (0.15), fosfor (12.0), kalium (0.35),
-                                drainase (Baik), risiko_bencana_hama (Rendah).
-                                (Kolom ini belum tersedia di SoilGrids, menunggu data
-                                 Dinas Pertanian / uji lab tanah).
+     * DATA RIIL SoilGrids    : Semua 20 lokasi (L001 - L020) terisi data riil
+                                untuk kolom tekstur_tanah, ph_tanah, karbon_organik.
+     * KONFIGURASI LOKASI     : lintang, bujur, nama_lokasi, ketinggian_tempat.
+     * DATA DUMMY TERSTRUKTUR : nitrogen (0.10-0.90), fosfor (8.5-16.5),
+                                kalium (0.22-0.60), drainase (Baik/Rusak), dan
+                                risiko_bencana_hama (Rendah/Sedang/Tinggi) dibuat
+                                deterministik per id_lokasi (src/data_fetcher.py)
+                                untuk menggantikan data lab/Dinas yang belum ada.
 
 D. data/raw/varietas_tanaman.csv
-   - Jumlah data : 10 baris awal (template dari Tabel 3.7 PDF).
+   - Jumlah data : 25 baris (25 varietas Padi, Jagung, dan Kedelai).
    - Kolom       : id_varietas, nama_varietas, komoditas, umur_panen_hari,
                    potensi_hasil_ton_ha, ketahanan_hama_skala (1-5),
-                   kebutuhan_air (Banyak/Sedang/Sedikit), ketinggian_optimal_mdpl.
-   - Status      : TEMPLATE AWAL (10 varietas dari PDF; perlu dilengkapi menjadi
-                   25-30 varietas dan diverifikasi dengan dokumen resmi Kementan/BSIP).
+                   kebutuhan_air (Banyak/Sedang/Sedikit), ketinggian_optimal_mdpl,
+                   sumber_status.
+   - Status Isi  :
+     * Baris 1-10  : Diambil dari Tabel 3.7 PDF proposal.
+     * Baris 11-25 : Dummy referensi varietas nasional Kementan/BSIP untuk
+                     menggenapi target 25-30 varietas.
 
 
 2. LABEL TARGET (VARIETAS) SAAT INI
 --------------------------------------------------------------------------------
-- Lokasi kode : Fungsi `beri_label_varietas_prototipe()` di main.py
-- Sumber      : Aturan prototipe sementara (berbasis curah_hujan, suhu_rata_rata,
-                dan ph_tanah) untuk keperluan uji jalan pipeline model.
-- Kelas (6)   : Padi_Inpari_32, Padi_Ciherang, Padi_Inpari_42,
-                Jagung_BISI_18, Jagung_NK_212, Kedelai_Anjasmoro.
-- Status      : PROTOTIPE (bukan label lapangan resmi).
+- Lokasi kode : Fungsi `beri_label_varietas_prototipe()` di src/dataset_loader.py
+- Sumber      : Aturan dummy berbasis kombinasi agroklimat (curah_hujan, suhu)
+                dan kondisi tanah (ph_tanah, drainase, ketinggian_tempat,
+                risiko_bencana_hama).
+- Jumlah kelas: 12 kelas varietas muncul pada dataset 20 lokasi (dari total
+                960 data train dan 240 data test).
+- Status      : DUMMY / PROTOTIPE (bukan label lapangan resmi Dinas Pertanian).
 
 
-3. SUMBER DATA TAMBAHAN YANG SUDAH DISIAPKAN DI KODE (OPSIONAL)
+3. SUMBER DATA TAMBAHAN YANG TERSEDIA DI KODE (OPSIONAL)
 --------------------------------------------------------------------------------
 - Hugging Face (`liaad/agricultural-data`):
-  Fungsi `fetch_hf_crop_recommendation()` sudah tersedia di `src/data_fetcher.py`
-  jika sewaktu-waktu ingin menguji klasifikasi tabular (N, P, K, pH, suhu,
-  kelembaban, curah hujan).
+  Fungsi `fetch_hf_crop_recommendation()` tersedia di `src/data_fetcher.py`
+  jika ingin menguji klasifikasi tabular (N, P, K, pH, suhu, kelembaban, hujan).
 
 
-4. PERBANDINGAN KEBUTUHAN PDF VS KONDISI SAAT INI (YANG BELUM ADA)
+4. PERBANDINGAN KEBUTUHAN PDF VS KONDISI SAAT INI
 --------------------------------------------------------------------------------
 A. Lokasi Pengamatan (Bagian 3.7 PDF)
    - Kebutuhan PDF : 20 titik pengamatan di Kabupaten Aceh Utara.
-   - Kondisi kini  : Baru 5 titik (L001 - L005).
-   - Belum ada     : 15 titik lokasi tambahan.
+   - Kondisi kini  : SUDAH TERPENUHI 20 titik kecamatan (L001 - L020).
 
 B. Data Agroklimat Time-Series (Tabel 3.1 PDF)
-   - Kebutuhan PDF : 6 variabel bulanan 2020-2025 dari BMKG
-                     (curah_hujan, suhu_rata_rata, suhu_maksimal, suhu_minimum,
-                      kelembaban_rata_rata, lama_penyinaran [jam/hari]).
-   - Kondisi kini  : 6/6 variabel (harian & bulanan) sudah ada dari NASA POWER
-                     API (2020-2025).
-   - Belum ada     : Data resmi BMKG; satuan `lama_penyinaran` saat ini masih
-                     radiasi matahari (ALLSKY_SFC_SW_DWN), bukan jam/hari.
+   - Kebutuhan PDF : 6 variabel bulanan 2020-2025 dari BMKG (lama_penyinaran
+                     dalam satuan jam/hari).
+   - Kondisi kini  : 6/6 variabel (harian 43.840 baris & bulanan 1.440 baris)
+                     sudah riil dari NASA POWER API (2020-2025).
+   - Catatan       : Saat data resmi BMKG tersedia, ganti `lama_penyinaran` ke
+                     satuan jam/hari.
 
 C. Data Kondisi Tanah & Lingkungan (Tabel 3.2 PDF)
    - Sudah riil (4): tekstur_tanah, ph_tanah, karbon_organik (SoilGrids),
-                     ketinggian_tempat (konfigurasi).
-   - Belum ada / masih placeholder (5):
-     * nitrogen (mg/kg)           -> masih 0.15 (harus dari lab/Dinas)
-     * fosfor (mg/kg)             -> masih 12.0 (harus dari lab/Dinas)
-     * kalium (mg/kg atau cmol/kg)-> masih 0.35 (harus dari lab/Dinas)
-     * drainase (Baik/Rusak)      -> masih "Baik" semua (harus observasi)
-     * risiko_bencana_hama        -> masih "Rendah" semua (harus data Dinas)
+                     ketinggian_tempat (konfigurasi kecamatan).
+   - Masih DUMMY (5): nitrogen, fosfor, kalium, drainase, risiko_bencana_hama
+                      (dibuat bervariasi terstruktur per lokasi di data_fetcher.py).
 
 D. Data Varietas Tanaman & Label Target (Tabel 3.3 & Bagian 3.7 PDF)
-   - Kebutuhan PDF : 25-30 varietas (Padi, Jagung, Kedelai) dari Kementan RI
-                     beserta atribut (umur_panen, potensi_hasil, ketahanan_hama,
-                     kebutuhan_air, ketinggian_optimal) + label varietas aktual.
-   - Kondisi kini  : Belum ada file dataset 25-30 varietas Kementan; target di
-                     main.py masih memakai 6 kelas label prototipe.
+   - Kebutuhan PDF : 25-30 varietas Kementan + label varietas aktual lapangan.
+   - Kondisi kini  : 25 varietas sudah tersedia di `varietas_tanaman.csv`
+                     (10 dari PDF + 15 dummy referensi), sedangkan label target
+                     masih berasal dari aturan dummy di `dataset_loader.py`.
 
 E. Panjang Sekuens LSTM (Bagian 3.10 PDF)
    - Kebutuhan PDF : 60 bulan.
    - Kondisi kini  : Diset 12 bulan di configs/model_config.yaml agar dari
-                     total 72 bulan (2020-2025) masih cukup banyak sampel latih.
+                     total 72 bulan (2020-2025) terbentuk 960 train & 240 test.
 
 
-5. CHECKLIST DATA YANG HARUS DILENGKAPI UNTUK VERSI FINAL
+5. CHECKLIST DATA YANG HARUS DIGANTI DUMMY -> RIIL UNTUK VERSI FINAL
 --------------------------------------------------------------------------------
-[ ] Tambah 15 titik lokasi lagi agar genap 20 titik pengamatan di Aceh Utara.
-[ ] Ganti/validasi data agroklimat dengan data resmi BMKG (satuan jam/hari).
-[ ] Isi nilai riil nitrogen, fosfor, kalium, drainase, dan risiko_bencana_hama
-    dari Dinas Pertanian dan Perkebunan Aceh / uji lab / observasi lapangan.
-[ ] Buat/masukkan dataset karakteristik 25-30 varietas dari Kementan RI.
-[ ] Ganti label prototipe dengan label ground-truth varietas unggulan aktual
-    per lokasi/musim tanam.
+[x] Perluas titik lokasi menjadi 20 titik kecamatan di Aceh Utara (L001 - L020).
+[x] Siapkan 25 varietas tanaman pangan di `data/raw/varietas_tanaman.csv`.
+[ ] Ganti/validasi data agroklimat NASA POWER dengan data resmi BMKG (jam/hari).
+[ ] Ganti nilai dummy nitrogen, fosfor, kalium, drainase, & risiko_bencana_hama
+    dengan data uji lab / Dinas Pertanian Aceh / observasi lapangan.
+[ ] Verifikasi 25-30 varietas di `varietas_tanaman.csv` dengan PDF Kementan/BSIP.
+[ ] Ganti fungsi label dummy dengan label ground-truth varietas unggulan aktual
+    per lokasi/musim tanam dari Dinas Pertanian / pakar.
 ================================================================================
-

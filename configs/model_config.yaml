@@ -7,7 +7,7 @@ data:
   processed_dir: "data/processed"
   start_date: "20200101"
   end_date: "20251231"
-  # 5 titik sampel awal di Kabupaten Aceh Utara (bisa diperluas ke 20 titik)
+  # 20 titik pengamatan (kecamatan) di Kabupaten Aceh Utara sesuai Bagian 3.7 PDF
   locations:
     - id: "L001"
       name: "Lhoksukon"
@@ -34,6 +34,81 @@ data:
       lat: 5.1067
       lon: 97.1056
       ketinggian_tempat: 25.0
+    - id: "L006"
+      name: "Muara Batu"
+      lat: 5.2430
+      lon: 96.9530
+      ketinggian_tempat: 5.0
+    - id: "L007"
+      name: "Samudera"
+      lat: 5.1340
+      lon: 97.1970
+      ketinggian_tempat: 4.0
+    - id: "L008"
+      name: "Tanah Luas"
+      lat: 4.9850
+      lon: 97.2240
+      ketinggian_tempat: 18.0
+    - id: "L009"
+      name: "Nibong"
+      lat: 5.0590
+      lon: 97.2430
+      ketinggian_tempat: 10.0
+    - id: "L010"
+      name: "Syamtalira Bayu"
+      lat: 5.1090
+      lon: 97.1760
+      ketinggian_tempat: 7.0
+    - id: "L011"
+      name: "Meurah Mulia"
+      lat: 5.0480
+      lon: 97.1730
+      ketinggian_tempat: 14.0
+    - id: "L012"
+      name: "Tanah Pasir"
+      lat: 5.1180
+      lon: 97.2760
+      ketinggian_tempat: 5.0
+    - id: "L013"
+      name: "Lapang"
+      lat: 5.1350
+      lon: 97.2910
+      ketinggian_tempat: 3.0
+    - id: "L014"
+      name: "Baktiya"
+      lat: 5.0830
+      lon: 97.3920
+      ketinggian_tempat: 9.0
+    - id: "L015"
+      name: "Baktiya Barat"
+      lat: 5.0880
+      lon: 97.3450
+      ketinggian_tempat: 7.0
+    - id: "L016"
+      name: "Seunuddon"
+      lat: 5.1580
+      lon: 97.4380
+      ketinggian_tempat: 3.0
+    - id: "L017"
+      name: "Tanah Jambo Aye"
+      lat: 5.1260
+      lon: 97.4650
+      ketinggian_tempat: 6.0
+    - id: "L018"
+      name: "Langkahan"
+      lat: 4.9350
+      lon: 97.4150
+      ketinggian_tempat: 45.0
+    - id: "L019"
+      name: "Cot Girek"
+      lat: 4.9210
+      lon: 97.3210
+      ketinggian_tempat: 55.0
+    - id: "L020"
+      name: "Sawang"
+      lat: 5.1320
+      lon: 96.9250
+      ketinggian_tempat: 85.0
 
   # Tabel 3.1 PDF: Data Agroklimat (Time-Series)
   climate_features:

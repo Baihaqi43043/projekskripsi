@@ -55,9 +55,98 @@ def get_git_info() -> dict[str, Any]:
     return info
 
 
-def export_git_changelog(out_path: str = "results/changelog_kode.txt", limit: int = 50) -> None:
-    """Ekspor riwayat commit Git ke file teks untuk dokumentasi perubahan kode."""
+def _format_param_diff(prev_params: dict[str, Any], curr_params: dict[str, Any]) -> str:
+    """Bandingkan hyperparameter run saat ini dengan run sebelumnya."""
+    if not curr_params:
+        return "(parameter tidak tercatat)"
+    if not prev_params:
+        return ", ".join(f"{k}={v}" for k, v in curr_params.items())
+    diffs = []
+    all_keys = list(dict.fromkeys(list(prev_params.keys()) + list(curr_params.keys())))
+    for k in all_keys:
+        v_old = prev_params.get(k, "-")
+        v_new = curr_params.get(k, "-")
+        if v_old != v_new:
+            diffs.append(f"{k}: {v_old} -> {v_new}")
+    return "; ".join(diffs) if diffs else "Tidak ada perubahan parameter (sama seperti run sebelumnya)"
+
+
+def export_git_changelog(
+    out_path: str = "results/changelog_kode.txt",
+    limit: int = 50,
+    history_path: str = "results/experiment_history.csv",
+) -> None:
+    """Ekspor log perubahan parameter & dampaknya ke akurasi + riwayat commit Git."""
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
+
+    param_lines: list[str] = [
+        "================================================================================",
+        "LOG PERUBAHAN PARAMETER & DAMPAK TERHADAP AKURASI MODEL",
+        f"Diperbarui: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "================================================================================",
+    ]
+
+    if os.path.exists(history_path):
+        with open(history_path, "r", encoding="utf-8") as f:
+            rows = list(csv.DictReader(f))
+
+        # Cari run klasifikasi terbaik berdasarkan F1 lalu Accuracy
+        scored_rows = [r for r in rows if r.get("accuracy") not in ("", None)]
+        best_key = None
+        if scored_rows:
+            best_row = max(
+                scored_rows,
+                key=lambda r: (
+                    float(r["f1_weighted"]) if r.get("f1_weighted") else 0.0,
+                    float(r["accuracy"]) if r.get("accuracy") else 0.0,
+                ),
+            )
+            best_key = (best_row["run_id"], best_row["stage"])
+            param_lines.append(
+                f"MODEL TERBAIK SAAT INI : {best_row['stage']} ({best_row['environment']}) | "
+                f"Acc={best_row['accuracy']} | F1={best_row['f1_weighted']} | Top-3={best_row['top_3_accuracy']}"
+            )
+            param_lines.append(f"Parameter Terbaik      : {best_row['hyperparameters']}")
+            param_lines.append("-" * 80)
+
+        prev_by_group: dict[str, dict[str, Any]] = {}
+        for idx, r in enumerate(rows, 1):
+            stage = r.get("stage", "")
+            group = "LSTM" if "LSTM" == stage else ("Baseline" if "Baseline" in stage else "Hybrid_RF")
+            try:
+                curr_params = json.loads(r.get("hyperparameters") or "{}")
+            except json.JSONDecodeError:
+                curr_params = {}
+
+            prev_entry = prev_by_group.get(group, {})
+            prev_params = prev_entry.get("params", {})
+            param_diff = _format_param_diff(prev_params, curr_params)
+
+            if stage == "LSTM":
+                metric_str = f"Loss Akhir={r.get('loss_akhir', '-')}"
+            else:
+                acc = float(r["accuracy"]) if r.get("accuracy") else None
+                f1 = float(r["f1_weighted"]) if r.get("f1_weighted") else None
+                top3 = float(r["top_3_accuracy"]) if r.get("top_3_accuracy") else None
+                prev_acc = prev_entry.get("acc")
+                prev_f1 = prev_entry.get("f1")
+                delta_acc = f" ({acc - prev_acc:+.4f})" if (acc is not None and prev_acc is not None) else ""
+                delta_f1 = f" ({f1 - prev_f1:+.4f})" if (f1 is not None and prev_f1 is not None) else ""
+                metric_str = f"Acc={acc}{delta_acc}, F1={f1}{delta_f1}, Top-3={top3}"
+                prev_by_group[group] = {"params": curr_params, "acc": acc, "f1": f1}
+
+            if stage == "LSTM":
+                prev_by_group[group] = {"params": curr_params}
+
+            tag = " [TERBAIK]" if (r.get("run_id"), stage) == best_key else ""
+            param_lines.append(f"[{idx}] {r.get('timestamp')} | {stage} ({r.get('environment')}) | Commit: {r.get('git_commit')}{tag}")
+            param_lines.append(f"    Perubahan Param : {param_diff}")
+            param_lines.append(f"    Hasil           : {metric_str}")
+            if r.get("catatan"):
+                param_lines.append(f"    Catatan         : {r.get('catatan')}")
+    else:
+        param_lines.append("Belum ada data di results/experiment_history.csv.")
+
     try:
         log_output = subprocess.check_output(
             [
@@ -73,16 +162,18 @@ def export_git_changelog(out_path: str = "results/changelog_kode.txt", limit: in
     except Exception as exc:
         log_output = f"Gagal membaca git log: {exc}"
 
-    header = (
-        "================================================================================\n"
-        "RIWAYAT PERUBAHAN KODE (GIT CHANGELOG OTOMATIS)\n"
-        f"Diperbarui: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-        "================================================================================\n"
-        "Commit  | Tanggal             | Author       | Pesan Commit\n"
-        "--------------------------------------------------------------------------------\n"
-    )
+    git_section = [
+        "",
+        "================================================================================",
+        "RIWAYAT COMMIT GIT",
+        "================================================================================",
+        "Commit  | Tanggal             | Author       | Pesan Commit",
+        "--------------------------------------------------------------------------------",
+        log_output,
+        "",
+    ]
     with open(out_path, "w", encoding="utf-8") as f:
-        f.write(header + log_output + "\n")
+        f.write("\n".join(param_lines + git_section))
 
 
 def save_rf_artifacts(

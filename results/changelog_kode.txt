@@ -1,11 +1,75 @@
 ================================================================================
-RIWAYAT PERUBAHAN KODE (GIT CHANGELOG OTOMATIS)
-Diperbarui: 2026-11-21 16:35:51
+LOG PERUBAHAN PARAMETER & DAMPAK TERHADAP AKURASI MODEL
+Diperbarui: 2026-11-21 17:28:11
+================================================================================
+MODEL TERBAIK SAAT INI : Hybrid_LSTM_RF (local) | Acc=0.425 | F1=0.4624 | Top-3=0.625
+Parameter Terbaik      : {"n_estimators": 200, "max_depth": 15, "min_samples_split": 2, "min_samples_leaf": 1, "class_weight": "balanced"}
+--------------------------------------------------------------------------------
+[1] 2026-11-21 16:35:30 | LSTM (local) | Commit: 97c508c
+    Perubahan Param : hidden_size_1=128, hidden_size_2=64, embedding_dim=32, dropout=0.2, epochs=30, batch_size=16, learning_rate=0.001
+    Hasil           : Loss Akhir=0.4675
+    Catatan         : seq_len=12, seed=42
+[2] 2026-11-21 16:35:32 | Baseline_RF (local) | Commit: 97c508c
+    Perubahan Param : n_estimators=200, max_depth=15, min_samples_split=2, min_samples_leaf=1, class_weight=balanced
+    Hasil           : Acc=0.4167, F1=0.3742, Top-3=0.6833
+    Catatan         : Static + Mean Climate, seed=42
+[3] 2026-11-21 16:35:32 | Hybrid_LSTM_RF (local) | Commit: 97c508c
+    Perubahan Param : n_estimators=200, max_depth=15, min_samples_split=2, min_samples_leaf=1, class_weight=balanced
+    Hasil           : Acc=0.4167, F1=0.4579, Top-3=0.85
+    Catatan         : LSTM 32-dim + Static (41 fitur), seed=42
+[4] 2026-11-21 16:56:16 | Baseline RF (Statis + Mean Iklim) (google_colab) | Commit: 7eca85d
+    Perubahan Param : (parameter tidak tercatat)
+    Hasil           : Acc=0.4167 (+0.0000), F1=0.3728 (-0.0014), Top-3=0.6833
+    Catatan         : Diimpor dari rf_benchmark_metrics.csv (Colab)
+[5] 2026-11-21 16:56:16 | Baseline GradientBoosting (google_colab) | Commit: 7eca85d
+    Perubahan Param : (parameter tidak tercatat)
+    Hasil           : Acc=0.3167 (-0.1000), F1=0.2738 (-0.0990), Top-3=0.85
+    Catatan         : Diimpor dari rf_benchmark_metrics.csv (Colab)
+[6] 2026-11-21 16:56:16 | Hybrid LSTM + RF (Default) (google_colab) | Commit: 7eca85d
+    Perubahan Param : (parameter tidak tercatat)
+    Hasil           : Acc=0.3333 (-0.0834), F1=0.3457 (-0.1122), Top-3=0.8333
+    Catatan         : Diimpor dari rf_benchmark_metrics.csv (Colab)
+[7] 2026-11-21 09:53:53 | Hybrid_RF_Tuned (google_colab) | Commit: 7eca85d
+    Perubahan Param : n_estimators=500, min_samples_split=2, min_samples_leaf=1, max_features=sqrt, max_depth=15, class_weight=balanced
+    Hasil           : Acc=0.3333 (+0.0000), F1=0.3457 (+0.0000), Top-3=0.85
+    Catatan         : RandomizedSearchCV TimeSeriesSplit (Colab)
+[8] 2026-11-21 17:16:47 | LSTM (local) | Commit: 7eca85d
+    Perubahan Param : Tidak ada perubahan parameter (sama seperti run sebelumnya)
+    Hasil           : Loss Akhir=1.0549
+    Catatan         : seq_len=12, seed=42
+[9] 2026-11-21 17:16:49 | Baseline_RF (local) | Commit: 7eca85d
+    Perubahan Param : n_estimators=200, max_depth=15, min_samples_split=2, min_samples_leaf=1, class_weight=balanced
+    Hasil           : Acc=0.2583 (-0.0584), F1=0.2269 (-0.0469), Top-3=0.675
+    Catatan         : Static + Mean Climate, seed=42
+[10] 2026-11-21 17:16:49 | Hybrid_LSTM_RF (local) | Commit: 7eca85d [TERBAIK]
+    Perubahan Param : n_estimators: 500 -> 200; max_features: sqrt -> -
+    Hasil           : Acc=0.425 (+0.0917), F1=0.4624 (+0.1167), Top-3=0.625
+    Catatan         : LSTM 32-dim + Static (41 fitur), seed=42
+[11] 2026-11-21 17:27:36 | Baseline_RF (local) | Commit: 7eca85d
+    Perubahan Param : Tidak ada perubahan parameter (sama seperti run sebelumnya)
+    Hasil           : Acc=0.2583 (+0.0000), F1=0.2269 (+0.0000), Top-3=0.675
+    Catatan         : Static + Mean Climate, seed=42
+[12] 2026-11-21 17:27:36 | Hybrid_LSTM_RF (local) | Commit: 7eca85d
+    Perubahan Param : Tidak ada perubahan parameter (sama seperti run sebelumnya)
+    Hasil           : Acc=0.425 (+0.0000), F1=0.4624 (+0.0000), Top-3=0.625
+    Catatan         : LSTM 32-dim + Static (41 fitur), seed=42
+[13] 2026-11-21 17:28:10 | Hybrid_RF_Tuned (local) | Commit: 7eca85d
+    Perubahan Param : class_weight: balanced -> None; max_features: - -> 0.5
+    Hasil           : Acc=0.35 (-0.0750), F1=0.4063 (-0.0561), Top-3=0.6625
+    Catatan         : RandomizedSearchCV 30x5 lokal, seed=42
+
+================================================================================
+RIWAYAT COMMIT GIT
 ================================================================================
 Commit  | Tanggal             | Author       | Pesan Commit
 --------------------------------------------------------------------------------
+7eca85d | 2026-11-21 16:47:56 | baihaqi43043 | Merge branch 'main' into develop_rahmat
+906ac15 | 2026-11-21 16:42:10 | rahmatsiddiq946 | update training file lstm
+deb964f | 2026-11-21 16:41:37 | baihaqi43043 | push dikit
 97c508c | 2026-11-21 16:33:44 | baihaqi43043 | update log
+d197f69 | 2026-11-21 16:31:52 | rahmatsiddiq946 | Merge branch 'main' of https://github.com/RahmatSiddiqi/projekskripsi into develop_rahmat
 91d7cc7 | 2026-11-21 16:28:11 | baihaqi43043 | uppdate lagi
+d11d20a | 2026-11-21 16:25:03 | rahmatsiddiq946 | pisah data train dan testing
 f4257ee | 2026-11-21 16:22:51 | baihaqi43043 | update rahmat
 16647de | 2026-11-21 16:01:06 | baihaqi43043 | update data
 1274b58 | 2026-11-21 15:47:44 | baihaqi43043 | update data

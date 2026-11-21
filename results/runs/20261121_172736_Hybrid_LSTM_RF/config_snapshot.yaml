@@ -1,0 +1,154 @@
+project:
+  name: "Model Hybrid LSTM-Random Forest Rekomendasi Varietas Tanaman"
+  seed: 42
+
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  start_date: "20200101"
+  end_date: "20251231"
+  # 20 titik pengamatan (kecamatan) di Kabupaten Aceh Utara sesuai Bagian 3.7 PDF
+  locations:
+    - id: "L001"
+      name: "Lhoksukon"
+      lat: 5.0528
+      lon: 97.3117
+      ketinggian_tempat: 8.0
+    - id: "L002"
+      name: "Matangkuli"
+      lat: 5.0272
+      lon: 97.2714
+      ketinggian_tempat: 12.0
+    - id: "L003"
+      name: "Syamtalira Aron"
+      lat: 5.0911
+      lon: 97.2133
+      ketinggian_tempat: 6.0
+    - id: "L004"
+      name: "Dewantara"
+      lat: 5.2356
+      lon: 97.0086
+      ketinggian_tempat: 4.0
+    - id: "L005"
+      name: "Kuta Makmur"
+      lat: 5.1067
+      lon: 97.1056
+      ketinggian_tempat: 25.0
+    - id: "L006"
+      name: "Muara Batu"
+      lat: 5.2430
+      lon: 96.9530
+      ketinggian_tempat: 5.0
+    - id: "L007"
+      name: "Samudera"
+      lat: 5.1340
+      lon: 97.1970
+      ketinggian_tempat: 4.0
+    - id: "L008"
+      name: "Tanah Luas"
+      lat: 4.9850
+      lon: 97.2240
+      ketinggian_tempat: 18.0
+    - id: "L009"
+      name: "Nibong"
+      lat: 5.0590
+      lon: 97.2430
+      ketinggian_tempat: 10.0
+    - id: "L010"
+      name: "Syamtalira Bayu"
+      lat: 5.1090
+      lon: 97.1760
+      ketinggian_tempat: 7.0
+    - id: "L011"
+      name: "Meurah Mulia"
+      lat: 5.0480
+      lon: 97.1730
+      ketinggian_tempat: 14.0
+    - id: "L012"
+      name: "Tanah Pasir"
+      lat: 5.1180
+      lon: 97.2760
+      ketinggian_tempat: 5.0
+    - id: "L013"
+      name: "Lapang"
+      lat: 5.1350
+      lon: 97.2910
+      ketinggian_tempat: 3.0
+    - id: "L014"
+      name: "Baktiya"
+      lat: 5.0830
+      lon: 97.3920
+      ketinggian_tempat: 9.0
+    - id: "L015"
+      name: "Baktiya Barat"
+      lat: 5.0880
+      lon: 97.3450
+      ketinggian_tempat: 7.0
+    - id: "L016"
+      name: "Seunuddon"
+      lat: 5.1580
+      lon: 97.4380
+      ketinggian_tempat: 3.0
+    - id: "L017"
+      name: "Tanah Jambo Aye"
+      lat: 5.1260
+      lon: 97.4650
+      ketinggian_tempat: 6.0
+    - id: "L018"
+      name: "Langkahan"
+      lat: 4.9350
+      lon: 97.4150
+      ketinggian_tempat: 45.0
+    - id: "L019"
+      name: "Cot Girek"
+      lat: 4.9210
+      lon: 97.3210
+      ketinggian_tempat: 55.0
+    - id: "L020"
+      name: "Sawang"
+      lat: 5.1320
+      lon: 96.9250
+      ketinggian_tempat: 85.0
+
+  # Tabel 3.1 PDF: Data Agroklimat (Time-Series)
+  climate_features:
+    - "curah_hujan"
+    - "suhu_rata_rata"
+    - "suhu_maksimal"
+    - "suhu_minimum"
+    - "kelembaban_rata_rata"
+    - "lama_penyinaran"
+
+  # Tabel 3.2 PDF: Data Kondisi Tanah dan Lingkungan (Statis)
+  static_features:
+    - "tekstur_tanah"
+    - "ph_tanah"
+    - "nitrogen"
+    - "fosfor"
+    - "kalium"
+    - "karbon_organik"
+    - "drainase"
+    - "ketinggian_tempat"
+    - "risiko_bencana_hama"
+
+  sequence_length: 12     # Sliding window 12 bulan (bisa diubah ke 24/60)
+  train_ratio: 0.8
+
+lstm:
+  hidden_size_1: 128
+  hidden_size_2: 64
+  embedding_dim: 32
+  dropout: 0.2
+  epochs: 30
+  batch_size: 16
+  learning_rate: 0.001
+
+random_forest:
+  n_estimators: 200
+  max_depth: 15
+  min_samples_split: 2
+  min_samples_leaf: 1
+  class_weight: "balanced"
+
+recommendation:
+  top_k: 3

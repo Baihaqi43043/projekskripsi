@@ -1,0 +1,30 @@
+{
+  "run_id": "20261121_171647",
+  "timestamp": "2026-11-21 17:16:47",
+  "git": {
+    "commit": "7eca85d",
+    "branch": "main",
+    "dirty": true
+  },
+  "stage": "LSTM",
+  "environment": "local",
+  "dataset": {
+    "train_samples": 960,
+    "test_samples": 240,
+    "num_classes": 12
+  },
+  "hyperparameters": {
+    "hidden_size_1": 128,
+    "hidden_size_2": 64,
+    "embedding_dim": 32,
+    "dropout": 0.2,
+    "epochs": 30,
+    "batch_size": 16,
+    "learning_rate": 0.001
+  },
+  "loss_akhir": 1.0548991322517396,
+  "metrics": {},
+  "top_features": [],
+  "duration_sec": 9.01,
+  "catatan": "seq_len=12, seed=42"
+}

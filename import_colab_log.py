@@ -1,29 +1,83 @@
-"""Gabungkan log & hasil training dari Google Colab ke folder lokal `results/`."""
+"""Gabungkan log & hasil training dari Google Colab (.zip atau folder) ke folder lokal `results/`."""
 
 from __future__ import annotations
 
 import argparse
-import json
+from datetime import datetime
+import glob
 import os
 import shutil
+import tempfile
+import zipfile
+
 import pandas as pd
 
 from src.experiment_logger import HISTORY_COLUMNS, export_git_changelog, get_git_info
 
 
+def _build_df_from_benchmark_csv(bench_csv: str, run_id: str) -> pd.DataFrame:
+    """Bangun DataFrame format experiment_history dari rf_benchmark_metrics.csv saja."""
+    bench_df = pd.read_csv(bench_csv)
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    rows = []
+    for _, r in bench_df.iterrows():
+        top3_col = [c for c in bench_df.columns if c.startswith("Top-")]
+        top3_val = r[top3_col[0]] if top3_col else ""
+        rows.append(
+            {
+                "run_id": f"{run_id}_{r['Model'].replace(' ', '_')}",
+                "timestamp": now_str,
+                "git_commit": "colab",
+                "git_dirty": False,
+                "stage": r["Model"],
+                "environment": "google_colab",
+                "train_samples": "",
+                "test_samples": "",
+                "num_classes": "",
+                "hyperparameters": "{}",
+                "loss_akhir": "",
+                "accuracy": r.get("Accuracy", ""),
+                "precision_weighted": r.get("Precision (Weighted)", ""),
+                "recall_weighted": r.get("Recall (Weighted)", ""),
+                "f1_weighted": r.get("F1 (Weighted)", ""),
+                "top_3_accuracy": top3_val,
+                "top_features": "",
+                "duration_sec": "",
+                "catatan": "Diimpor dari rf_benchmark_metrics.csv (Colab)",
+            }
+        )
+    return pd.DataFrame(rows)
+
+
 def import_from_folder(source_dir: str, results_dir: str = "results") -> None:
-    """Import colab_experiment_history.csv & artefak pendukung ke `results/` lokal."""
+    """Import log Colab (dari zip terbaru, colab_experiment_history.csv, atau rf_benchmark_metrics.csv)."""
+    zip_files = sorted(glob.glob(os.path.join(source_dir, "colab_rf_bundle*.zip")))
+    if zip_files:
+        latest_zip = zip_files[-1]
+        print(f"Mengekstrak paket Colab terbaru: {latest_zip}")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with zipfile.ZipFile(latest_zip, "r") as zf:
+                zf.extractall(tmpdir)
+            import_from_folder(tmpdir, results_dir=results_dir)
+        return
+
     colab_csv = os.path.join(source_dir, "colab_experiment_history.csv")
-    if not os.path.exists(colab_csv):
+    bench_csv = os.path.join(source_dir, "rf_benchmark_metrics.csv")
+
+    if os.path.exists(colab_csv):
+        colab_df = pd.read_csv(colab_csv)
+        run_id = str(colab_df.iloc[-1]["run_id"])
+    elif os.path.exists(bench_csv):
+        run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        colab_df = _build_df_from_benchmark_csv(bench_csv, run_id)
+    else:
         raise FileNotFoundError(
-            f"Tidak menemukan {colab_csv}. Pastikan file hasil download Colab ada di folder tersebut."
+            f"Tidak menemukan colab_rf_bundle*.zip, colab_experiment_history.csv, atau rf_benchmark_metrics.csv di {source_dir}."
         )
 
-    colab_df = pd.read_csv(colab_csv)
     if colab_df.empty:
-        raise ValueError("File colab_experiment_history.csv kosong.")
+        raise ValueError("Data log Colab kosong.")
 
-    # Isi git_commit dari repo lokal saat mengimpor hasil Colab
     git_info = get_git_info()
     colab_df["git_commit"] = git_info["commit"]
     colab_df["git_dirty"] = git_info["dirty"]
@@ -45,7 +99,6 @@ def import_from_folder(source_dir: str, results_dir: str = "results") -> None:
         colab_df[HISTORY_COLUMNS].to_csv(history_path, index=False)
         print(f"Membuat {history_path} dengan {len(colab_df)} baris log Colab.")
 
-    run_id = str(colab_df.iloc[-1]["run_id"])
     run_dir = os.path.join(results_dir, "runs", f"{run_id}_Hybrid_RF_Tuned_Colab")
     os.makedirs(run_dir, exist_ok=True)
 
@@ -79,4 +132,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
