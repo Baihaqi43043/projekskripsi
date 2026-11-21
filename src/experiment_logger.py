@@ -55,6 +55,16 @@ def get_git_info() -> dict[str, Any]:
     return info
 
 
+def _safe_float(val: Any) -> float | None:
+    """Konversi aman ke float (mengembalikan None jika kosong atau string non-angka)."""
+    if val in ("", None):
+        return None
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return None
+
+
 def _format_param_diff(prev_params: dict[str, Any], curr_params: dict[str, Any]) -> str:
     """Bandingkan hyperparameter run saat ini dengan run sebelumnya."""
     if not curr_params:
@@ -90,15 +100,21 @@ def export_git_changelog(
         with open(history_path, "r", encoding="utf-8") as f:
             rows = list(csv.DictReader(f))
 
-        # Cari run klasifikasi terbaik berdasarkan F1 lalu Accuracy
-        scored_rows = [r for r in rows if r.get("accuracy") not in ("", None)]
+        # Cari run klasifikasi terbaik berdasarkan F1 lalu Accuracy (abaikan run regresi cuaca)
+        scored_rows = [
+            r
+            for r in rows
+            if "LSTM_Weather" not in r.get("stage", "")
+            and _safe_float(r.get("f1_weighted")) is not None
+            and _safe_float(r.get("accuracy")) is not None
+        ]
         best_key = None
         if scored_rows:
             best_row = max(
                 scored_rows,
                 key=lambda r: (
-                    float(r["f1_weighted"]) if r.get("f1_weighted") else 0.0,
-                    float(r["accuracy"]) if r.get("accuracy") else 0.0,
+                    _safe_float(r.get("f1_weighted")) or 0.0,
+                    _safe_float(r.get("accuracy")) or 0.0,
                 ),
             )
             best_key = (best_row["run_id"], best_row["stage"])
@@ -112,7 +128,11 @@ def export_git_changelog(
         prev_by_group: dict[str, dict[str, Any]] = {}
         for idx, r in enumerate(rows, 1):
             stage = r.get("stage", "")
-            group = "LSTM" if "LSTM" == stage else ("Baseline" if "Baseline" in stage else "Hybrid_RF")
+            group = (
+                "LSTM_Weather"
+                if "LSTM_Weather" in stage
+                else ("LSTM" if stage == "LSTM" else ("Baseline" if "Baseline" in stage else "Hybrid_RF"))
+            )
             try:
                 curr_params = json.loads(r.get("hyperparameters") or "{}")
             except json.JSONDecodeError:
@@ -124,19 +144,23 @@ def export_git_changelog(
 
             if stage == "LSTM":
                 metric_str = f"Loss Akhir={r.get('loss_akhir', '-')}"
+                prev_by_group[group] = {"params": curr_params}
+            elif "LSTM_Weather" in stage:
+                metric_str = (
+                    f"Loss={r.get('loss_akhir', '-')}, {r.get('precision_weighted', '')}, "
+                    f"{r.get('recall_weighted', '')}, {r.get('f1_weighted', '')}, {r.get('top_3_accuracy', '')}"
+                )
+                prev_by_group[group] = {"params": curr_params}
             else:
-                acc = float(r["accuracy"]) if r.get("accuracy") else None
-                f1 = float(r["f1_weighted"]) if r.get("f1_weighted") else None
-                top3 = float(r["top_3_accuracy"]) if r.get("top_3_accuracy") else None
+                acc = _safe_float(r.get("accuracy"))
+                f1 = _safe_float(r.get("f1_weighted"))
+                top3 = _safe_float(r.get("top_3_accuracy"))
                 prev_acc = prev_entry.get("acc")
                 prev_f1 = prev_entry.get("f1")
                 delta_acc = f" ({acc - prev_acc:+.4f})" if (acc is not None and prev_acc is not None) else ""
                 delta_f1 = f" ({f1 - prev_f1:+.4f})" if (f1 is not None and prev_f1 is not None) else ""
                 metric_str = f"Acc={acc}{delta_acc}, F1={f1}{delta_f1}, Top-3={top3}"
                 prev_by_group[group] = {"params": curr_params, "acc": acc, "f1": f1}
-
-            if stage == "LSTM":
-                prev_by_group[group] = {"params": curr_params}
 
             tag = " [TERBAIK]" if (r.get("run_id"), stage) == best_key else ""
             param_lines.append(f"[{idx}] {r.get('timestamp')} | {stage} ({r.get('environment')}) | Commit: {r.get('git_commit')}{tag}")

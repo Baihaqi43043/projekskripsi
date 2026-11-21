@@ -11,7 +11,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
 
-from src.dataset_loader import load_config
+from src.dataset_loader import load_config, prepare_from_weather_embeddings
 from src.evaluate import compute_classification_metrics
 from src.experiment_logger import export_git_changelog, log_experiment, save_rf_artifacts
 from src.recommender import get_feature_importance_summary, recommend_top_k
@@ -48,18 +48,27 @@ def run_rf_tuning(
     return search.best_estimator_, search.best_params_
 
 
-def main(tune: bool = False) -> None:
+def main(tune: bool = False, weather_emb_path: str | None = None) -> None:
     cfg = load_config()
     seed = cfg["project"]["seed"]
-    emb_path = os.path.join(cfg["data"]["processed_dir"], "lstm_embeddings.npz")
 
-    if not os.path.exists(emb_path):
-        raise FileNotFoundError(
-            f"File {emb_path} belum ditemukan. Jalankan `python train_lstm.py` terlebih dahulu."
-        )
-
-    print(f"[RF] Memuat vektor temporal LSTM & fitur statis dari {emb_path}...")
-    bundle = np.load(emb_path, allow_pickle=True)
+    if weather_emb_path:
+        if not os.path.exists(weather_emb_path):
+            raise FileNotFoundError(f"File {weather_emb_path} tidak ditemukan.")
+        print(f"[RF] Menggabungkan embedding cuaca LSTM ({weather_emb_path}) dengan data tanah statis...")
+        bundle = prepare_from_weather_embeddings(weather_emb_path, cfg)
+        merged_out = os.path.join(cfg["data"]["processed_dir"], "lstm_embeddings_from_weather.npz")
+        os.makedirs(cfg["data"]["processed_dir"], exist_ok=True)
+        np.savez(merged_out, **bundle)
+        print(f"[RF] Paket gabungan siap Colab disimpan ke: {merged_out}")
+    else:
+        emb_path = os.path.join(cfg["data"]["processed_dir"], "lstm_embeddings.npz")
+        if not os.path.exists(emb_path):
+            raise FileNotFoundError(
+                f"File {emb_path} belum ditemukan. Jalankan `python train_lstm.py` terlebih dahulu."
+            )
+        print(f"[RF] Memuat vektor temporal LSTM & fitur statis dari {emb_path}...")
+        bundle = np.load(emb_path, allow_pickle=True)
     emb_train = bundle["emb_train"]
     emb_test = bundle["emb_test"]
     X_seq_train = bundle["X_seq_train"]
@@ -225,5 +234,10 @@ def main(tune: bool = False) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Training & tuning Hybrid Random Forest.")
     parser.add_argument("--tune", action="store_true", help="Jalankan RandomizedSearchCV hyperparameter tuning.")
+    parser.add_argument(
+        "--weather-emb",
+        default=None,
+        help="Path ke lstm_weather_embeddings.npz (hasil notebook LSTM cuaca) untuk digabung otomatis dengan tanah.",
+    )
     args = parser.parse_args()
-    main(tune=args.tune)
+    main(tune=args.tune, weather_emb_path=args.weather_emb)
