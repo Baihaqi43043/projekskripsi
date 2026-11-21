@@ -1,0 +1,91 @@
+{
+  "run_id": "20261121_112154",
+  "timestamp": "2026-11-21 11:21:54",
+  "stage": "LSTM_Weather",
+  "duration_sec": 45.44,
+  "best_test_loss": 0.008824553355407804,
+  "hyperparameters": {
+    "hidden_1": 128,
+    "hidden_2": 64,
+    "embedding_dim": 32,
+    "dropout": 0.2,
+    "epochs": 40,
+    "batch_size": 32,
+    "learning_rate": 0.001,
+    "window_size": 30,
+    "features": [
+      "curah_hujan",
+      "suhu_rata_rata",
+      "suhu_maksimal",
+      "suhu_minimum",
+      "kelembaban_rata_rata",
+      "lama_penyinaran",
+      "bulan_sin",
+      "bulan_cos"
+    ]
+  },
+  "metrics": {
+    "mean_mae": 2.386,
+    "mean_rmse": 4.644,
+    "mean_r2": 0.529,
+    "mean_accuracy_wape_pct": 80.99,
+    "mean_accuracy_tol_pct": 81.79,
+    "rain_classification_acc_pct": 74.87,
+    "detail_per_fitur": [
+      {
+        "Parameter Cuaca": "curah_hujan",
+        "MAE": 6.274,
+        "RMSE": 17.69,
+        "R2 Score": 0.113,
+        "Akurasi WAPE (%)": 17.3799991607666,
+        "Akurasi Toleransi (%)": 79.64,
+        "Batas Toleransi": "±5.0"
+      },
+      {
+        "Parameter Cuaca": "suhu_rata_rata",
+        "MAE": 0.398,
+        "RMSE": 0.509,
+        "R2 Score": 0.89,
+        "Akurasi WAPE (%)": 98.47000122070312,
+        "Akurasi Toleransi (%)": 95.7,
+        "Batas Toleransi": "±1.0"
+      },
+      {
+        "Parameter Cuaca": "suhu_maksimal",
+        "MAE": 0.788,
+        "RMSE": 0.988,
+        "R2 Score": 0.566,
+        "Akurasi WAPE (%)": 97.2699966430664,
+        "Akurasi Toleransi (%)": 85.61,
+        "Batas Toleransi": "±1.5"
+      },
+      {
+        "Parameter Cuaca": "suhu_minimum",
+        "MAE": 0.515,
+        "RMSE": 0.686,
+        "R2 Score": 0.866,
+        "Akurasi WAPE (%)": 97.83999633789062,
+        "Akurasi Toleransi (%)": 95.7,
+        "Batas Toleransi": "±1.5"
+      },
+      {
+        "Parameter Cuaca": "kelembaban_rata_rata",
+        "MAE": 2.658,
+        "RMSE": 3.385,
+        "R2 Score": 0.542,
+        "Akurasi WAPE (%)": 96.83000183105469,
+        "Akurasi Toleransi (%)": 85.07,
+        "Batas Toleransi": "±5.0"
+      },
+      {
+        "Parameter Cuaca": "lama_penyinaran",
+        "MAE": 3.681,
+        "RMSE": 4.604,
+        "R2 Score": 0.195,
+        "Akurasi WAPE (%)": 78.12999725341797,
+        "Akurasi Toleransi (%)": 49.01,
+        "Batas Toleransi": "±3.0"
+      }
+    ]
+  }
+}

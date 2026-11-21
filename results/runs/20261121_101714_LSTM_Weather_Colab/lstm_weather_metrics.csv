@@ -1,0 +1,7 @@
+Parameter Cuaca,MAE,RMSE,R2 Score,MAPE (%)
+curah_hujan,7.627,17.015,0.179,484796.16
+suhu_rata_rata,0.41,0.515,0.888,1.58
+suhu_maksimal,0.798,1.002,0.554,2.76
+suhu_minimum,0.5,0.666,0.874,2.13
+kelembaban_rata_rata,2.738,3.444,0.526,3.29
+lama_penyinaran,3.82,4.649,0.179,34.32
