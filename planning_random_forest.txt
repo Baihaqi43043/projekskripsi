@@ -1,0 +1,87 @@
+================================================================================
+PLANNING KHUSUS TIM RANDOM FOREST (TRAINING & TUNING DI GOOGLE COLAB)
+================================================================================
+
+CATATAN PLATFORM:
+- Untuk menjalankan training kode Python/Scikit-learn, gunakan **Google Colab**
+  (https://colab.research.google.com/) — bukan NotebookLM (NotebookLM hanya untuk
+  membaca/merangkum dokumen, tidak bisa mengeksekusi kode ML).
+- Catatan tambahan: Random Forest berjalan di CPU (bukan GPU), jadi di Google
+  Colab pastikan pakai runtime CPU biasa (atau High-RAM jika dataset sudah besar)
+  supaya tidak menghabiskan kuota GPU.
+
+
+1. INPUT YANG DIPERLUKAN DI GOOGLE COLAB
+--------------------------------------------------------------------------------
+Karena kita sudah memisahkan pipeline LSTM dan Random Forest, kamu cukup
+membawa 1 file hasil kerja Tim LSTM:
+- `data/processed/lstm_embeddings.npz`
+  Berisi: `emb_train`, `emb_test` (32-dim), `X_seq_train`, `X_seq_test`,
+          `X_stat_train`, `X_stat_test`, `y_train`, `y_test`, `classes`.
+
+Cara masukin data ke Colab (Opsi A — Upload Langsung):
+- Upload `data/processed/lstm_embeddings.npz` langsung ke Google Colab saat
+  menjalankan sel ke-2 notebook (atau simpan di Google Drive), lalu langsung
+  jalankan training & tuning Random Forest tanpa perlu clone repo atau training
+  ulang LSTM.
+
+
+2. RENCANA EKSPERIMEN RANDOM FOREST (5 TAHAP)
+--------------------------------------------------------------------------------
+
+TAHAP 1: Feature Concatenation & Uji Rasio Dimensi
+- Baseline gabungan: `X_hybrid = [emb_lstm (32) | fitur_statis (9)]` -> 41 fitur.
+- Eksperimen tambahan (penting untuk analisis tesis/disertasi):
+  * Cek apakah 32 fitur LSTM terlalu mendominasi 9 fitur statis tanah.
+  * Bandingkan reduksi dimensi vektor LSTM via PCA (`8`, `16`, `32` komponen)
+    atau cek kontribusi fitur statis lewat Feature Importance.
+
+TAHAP 2: Penanganan Class Imbalance
+- Saat data varietas (25-30 kelas) sudah masuk, distribusi varietas pasti tidak
+  seimbang.
+- Uji dan bandingkan pada Random Forest:
+  * `class_weight=None`
+  * `class_weight="balanced"`
+  * `class_weight="balanced_subsample"`
+
+TAHAP 3: Hyperparameter Tuning (Anti-Leakage dengan TimeSeriesSplit)
+- Gunakan `GridSearchCV` atau `RandomizedSearchCV` dengan `cv=TimeSeriesSplit(n_splits=5)`
+  (JANGAN pakai KFold acak biasa agar urutan waktu tetap terjaga).
+- Ruang parameter yang diuji:
+  * `n_estimators`      : [100, 200, 300, 500]
+  * `max_depth`         : [None, 10, 15, 20, 30]
+  * `min_samples_split` : [2, 5, 10]
+  * `min_samples_leaf`  : [1, 2, 4]
+  * `max_features`      : ["sqrt", "log2", 0.5]
+- Scoring utama: `f1_weighted` dan `accuracy` (refit pada `f1_weighted`).
+
+TAHAP 4: Benchmarking Model (Untuk Tabel Hasil Bab IV)
+Bandingkan model di split data uji yang SAMA PERSIS:
+1. Baseline RF (hanya fitur statis + rata-rata iklim)
+2. Baseline XGBoost / GradientBoosting (opsional pembanding ensemble lain)
+3. Hybrid LSTM + Random Forest (Default)
+4. Hybrid LSTM + Random Forest (Tuned)
+
+Metrik wajib yang dicatat:
+- Accuracy
+- Precision (weighted & macro)
+- Recall (weighted & macro)
+- F1-Score (weighted & macro)
+- Top-K Accuracy (Top-3 & Top-5)
+- Confusion Matrix (visualisasi heatmap)
+
+TAHAP 5: Interpretabilitas & Export Model Terbaik
+- Hitung Feature Importance (Gini Importance + Permutation Importance pada data
+  test) untuk menjawab justifikasi agronomis (fitur tanah vs fitur temporal).
+- Simpan artefak final:
+  * `models/hybrid_rf_tuned.pkl` (joblib)
+  * `results/rf_benchmark_metrics.csv`
+  * Grafik Confusion Matrix & Feature Importance (.png) untuk laporan/paper.
+
+
+3. FILE NOTEBOOK SIAP PAKAI
+--------------------------------------------------------------------------------
+Notebook siap upload ke Google Colab sudah disediakan di:
+`notebooks/training_random_forest_colab.ipynb`
+================================================================================
+
