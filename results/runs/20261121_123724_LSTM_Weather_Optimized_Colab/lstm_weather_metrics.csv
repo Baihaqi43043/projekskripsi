@@ -1,0 +1,7 @@
+Parameter Cuaca,MAE,RMSE,R2 Score,Akurasi WAPE (%),Akurasi Toleransi (%),Batas Toleransi
+curah_hujan,4.667,8.735,0.137,19.05,78.31,±5.0
+suhu_rata_rata,0.433,0.552,0.869,98.34,93.14,±1.0
+suhu_maksimal,0.775,0.978,0.55,97.32,86.74,±1.5
+suhu_minimum,0.541,0.723,0.849,97.73,94.77,±1.5
+kelembaban_rata_rata,2.754,3.432,0.514,96.72,84.53,±5.0
+lama_penyinaran,3.614,4.529,0.188,78.48,49.65,±3.0
