@@ -1,12 +1,14 @@
-"""Script khusus Tim LSTM: melatih LSTM encoder dan mengekspor vektor 32-dim ke data/processed/."""
+"""Script khusus Tim LSTM: melatih LSTM encoder, ekspor vektor 32-dim, dan catat log otomatis."""
 
 from __future__ import annotations
 
 import os
+import time
 import numpy as np
 import torch
 
 from src.dataset_loader import load_config, prepare_shared_dataset
+from src.experiment_logger import export_git_changelog, log_experiment
 from src.lstm_encoder import extract_temporal_features, train_lstm_encoder
 
 
@@ -24,6 +26,7 @@ def main() -> None:
 
     lstm_cfg = cfg["lstm"]
     print("\n[LSTM] Melatih Temporal Encoder (128 -> 64 -> 32-dim)...")
+    t0 = time.perf_counter()
     lstm_model = train_lstm_encoder(
         X_seq_train=data["X_seq_train"],
         y_train=data["y_train"],
@@ -37,6 +40,7 @@ def main() -> None:
         learning_rate=lstm_cfg["learning_rate"],
         seed=seed,
     )
+    duration = time.perf_counter() - t0
 
     emb_train = extract_temporal_features(lstm_model, data["X_seq_train"])
     emb_test = extract_temporal_features(lstm_model, data["X_seq_test"])
@@ -61,10 +65,23 @@ def main() -> None:
         classes=classes,
     )
 
+    loss_akhir = getattr(lstm_model, "training_history_", {}).get("loss_akhir")
+    run_dir = log_experiment(
+        stage="LSTM",
+        train_samples=len(data["y_train"]),
+        test_samples=len(data["y_test"]),
+        num_classes=num_classes,
+        hyperparameters=lstm_cfg,
+        duration_sec=duration,
+        loss_akhir=loss_akhir,
+        catatan=f"seq_len={cfg['data']['sequence_length']}, seed={seed}",
+    )
+    export_git_changelog()
+
     print(f"\n[LSTM] Selesai! Bobot disimpan ke: {model_path}")
     print(f"[LSTM] Vektor temporal 32-dim disimpan ke: {emb_path} (shape train={emb_train.shape}, test={emb_test.shape})")
+    print(f"[LOG] Tercatat otomatis di results/experiment_history.csv & {run_dir}")
 
 
 if __name__ == "__main__":
     main()
-

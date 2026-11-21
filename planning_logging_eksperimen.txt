@@ -109,12 +109,12 @@ Setiap kali `train_lstm.py`, `train_rf.py`, atau notebook Colab selesai jalan,
   angka akurasi tersebut selalu bisa dilacak ulang.
 
 
-6. TAHAP IMPLEMENTASI (JIKA DISETUJUI)
+6. TAHAP IMPLEMENTASI (STATUS)
 --------------------------------------------------------------------------------
-[ ] Tahap 1 : Buat `src/experiment_logger.py` & folder `results/`
-[ ] Tahap 2 : Pasang logger otomatis di `train_lstm.py` & `train_rf.py`
-[ ] Tahap 3 : Tambahkan output log & gambar grafik otomatis di notebook Colab
-[ ] Tahap 4 : Tambah utilitas ekspor `git log` -> `results/changelog_kode.txt`
-[ ] Tahap 5 : Uji jalan `main.py` untuk memastikan CSV, JSON, & PNG terbuat rapi
+[x] Tahap 1 : Buat `src/experiment_logger.py` & folder `results/`
+[x] Tahap 2 : Pasang logger otomatis di `train_lstm.py` & `train_rf.py`
+[x] Tahap 3 : Tambahkan output log & gambar grafik otomatis di notebook Colab
+[x] Tahap 4 : Tambah utilitas ekspor `git log` -> `results/changelog_kode.txt`
+[x] Tahap 5 : Uji jalan `main.py` untuk memastikan CSV, JSON, & PNG terbuat rapi
 ================================================================================
 
