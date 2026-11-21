@@ -5,10 +5,18 @@ Model Hybrid LSTM - Random Forest untuk Pemilihan Varietas Tanaman Unggulan
 
 1. RINGKASAN FILE DATA SAAT INI (FOLDER: data/raw/)
 --------------------------------------------------------------------------------
-A. data/raw/aceh_utara_agroklimat_bulanan.csv
-   - Jumlah data : 360 baris (5 lokasi x 72 bulan, periode Jan 2020 - Des 2025)
+A. data/raw/aceh_utara_agroklimat_harian.csv
+   - Jumlah data : 10.960 baris (5 lokasi x 2.192 hari, 1 Jan 2020 - 31 Des 2025)
    - Sumber      : NASA POWER API (https://power.larc.nasa.gov/api/temporal/daily/point)
-                   Community: AG (Agroclimatology), ditarik harian lalu diagregasi bulanan.
+                   Community: AG (Agroclimatology).
+   - Kolom       : id_lokasi, tanggal (YYYY-MM-DD), tahun, bulan, curah_hujan,
+                   suhu_rata_rata, suhu_maksimal, suhu_minimum,
+                   kelembaban_rata_rata, lama_penyinaran.
+   - Status      : DATA RIIL (100% terisi dari NASA POWER API).
+
+B. data/raw/aceh_utara_agroklimat_bulanan.csv
+   - Jumlah data : 360 baris (5 lokasi x 72 bulan, periode Jan 2020 - Des 2025)
+   - Sumber      : Agregasi bulanan dari data harian NASA POWER API.
    - Kolom       :
      * id_lokasi             : ID titik pengamatan (L001 - L005)
      * tahun, bulan          : Periode waktu (2020 - 2025, bulan 1 - 12)
@@ -20,7 +28,7 @@ A. data/raw/aceh_utara_agroklimat_bulanan.csv
      * lama_penyinaran       : Rata-rata radiasi penyinaran matahari (ALLSKY_SFC_SW_DWN)
    - Status      : DATA RIIL (100% terisi dari NASA POWER API).
 
-B. data/raw/aceh_utara_tanah_statis.csv
+C. data/raw/aceh_utara_tanah_statis.csv
    - Jumlah data : 5 baris (5 titik sampel di Kabupaten Aceh Utara)
      * L001 : Lhoksukon       (5.0528, 97.3117) - elevasi 8.0 mdpl
      * L002 : Matangkuli      (5.0272, 97.2714) - elevasi 12.0 mdpl
@@ -35,6 +43,14 @@ B. data/raw/aceh_utara_tanah_statis.csv
                                 drainase (Baik), risiko_bencana_hama (Rendah).
                                 (Kolom ini belum tersedia di SoilGrids, menunggu data
                                  Dinas Pertanian / uji lab tanah).
+
+D. data/raw/varietas_tanaman.csv
+   - Jumlah data : 10 baris awal (template dari Tabel 3.7 PDF).
+   - Kolom       : id_varietas, nama_varietas, komoditas, umur_panen_hari,
+                   potensi_hasil_ton_ha, ketahanan_hama_skala (1-5),
+                   kebutuhan_air (Banyak/Sedang/Sedikit), ketinggian_optimal_mdpl.
+   - Status      : TEMPLATE AWAL (10 varietas dari PDF; perlu dilengkapi menjadi
+                   25-30 varietas dan diverifikasi dengan dokumen resmi Kementan/BSIP).
 
 
 2. LABEL TARGET (VARIETAS) SAAT INI
@@ -66,7 +82,8 @@ B. Data Agroklimat Time-Series (Tabel 3.1 PDF)
    - Kebutuhan PDF : 6 variabel bulanan 2020-2025 dari BMKG
                      (curah_hujan, suhu_rata_rata, suhu_maksimal, suhu_minimum,
                       kelembaban_rata_rata, lama_penyinaran [jam/hari]).
-   - Kondisi kini  : 6/6 variabel sudah ada dari NASA POWER API (2020-2025).
+   - Kondisi kini  : 6/6 variabel (harian & bulanan) sudah ada dari NASA POWER
+                     API (2020-2025).
    - Belum ada     : Data resmi BMKG; satuan `lama_penyinaran` saat ini masih
                      radiasi matahari (ALLSKY_SFC_SW_DWN), bukan jam/hari.
 
