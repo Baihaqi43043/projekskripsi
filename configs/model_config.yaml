@@ -1,0 +1,70 @@
+project:
+  name: "Hybrid LSTM-Random Forest Crop Variety Recommender"
+  seed: 42
+
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  start_date: "20200101"
+  end_date: "20251231"
+  # 5 titik sampel awal di Kabupaten Aceh Utara (bisa diperluas ke 20 titik)
+  locations:
+    - id: "L001"
+      name: "Lhoksukon"
+      lat: 5.0528
+      lon: 97.3117
+    - id: "L002"
+      name: "Matangkuli"
+      lat: 5.0272
+      lon: 97.2714
+    - id: "L003"
+      name: "Syamtalira Aron"
+      lat: 5.0911
+      lon: 97.2133
+    - id: "L004"
+      name: "Dewantara"
+      lat: 5.2356
+      lon: 97.0086
+    - id: "L005"
+      name: "Kuta Makmur"
+      lat: 5.1067
+      lon: 97.1056
+
+  climate_features:
+    - "PRECTOTCORR"       # Curah hujan (mm/hari -> diagregasi bulanan)
+    - "T2M"               # Suhu rata-rata (°C)
+    - "T2M_MAX"           # Suhu maksimal (°C)
+    - "T2M_MIN"           # Suhu minimal (°C)
+    - "RH2M"              # Kelembaban relatif (%)
+    - "ALLSKY_SFC_SW_DWN" # Radiasi/penyinaran matahari
+
+  static_features:
+    - "phh2o"
+    - "clay"
+    - "sand"
+    - "silt"
+    - "soc"
+    - "elevation"
+
+  sequence_length: 12     # Sliding window 12 bulan (bisa diubah ke 24/60)
+  train_ratio: 0.8
+
+lstm:
+  hidden_size_1: 128
+  hidden_size_2: 64
+  embedding_dim: 32
+  dropout: 0.2
+  epochs: 30
+  batch_size: 16
+  learning_rate: 0.001
+
+random_forest:
+  n_estimators: 200
+  max_depth: 15
+  min_samples_split: 2
+  min_samples_leaf: 1
+  class_weight: "balanced"
+
+recommendation:
+  top_k: 3
+

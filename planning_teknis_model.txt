@@ -1,0 +1,160 @@
+================================================================================
+PLANNING TEKNIS PENGEMBANGAN MODEL HYBRID (LSTM + RANDOM FOREST)
+Judul: Pengembangan Model Hybrid Berbasis Machine Learning untuk Pemilihan
+       Varietas Tanaman Unggulan Pertanian
+================================================================================
+
+1. RINGKASAN ARSITEKTUR MODEL HYBRID
+--------------------------------------------------------------------------------
+Tujuan model:
+Memprediksi dan merekomendasikan Top-K varietas tanaman unggulan (Padi, Jagung,
+Kedelai; 25-30 kelas varietas) berdasarkan kombinasi pola temporal agroklimat
+(time-series) dan kondisi statis tanah/lingkungan.
+
+Alur Pipeline Utama:
+[Data Agroklimat 60 Bulan] ---> [LSTM Encoder (128 -> 64 -> Dense 32)]
+                                              |
+                                     (Vektor Temporal 32-dim)
+                                              |
+[Data Statis Tanah & Lahan] --------> [Feature Concatenation]
+                                              |
+                                 [Random Forest Classifier]
+                                              |
+                     +------------------------+------------------------+
+                     v                                                 v
+         [Top-K Rekomendasi + Skor]                      [Feature Importance]
+
+
+2. SPESIFIKASI INPUT & REPRESENTASI DATA
+--------------------------------------------------------------------------------
+A. Input Dinamis / Time-Series (untuk LSTM):
+   - Sumber      : BMKG (2020-2025, resolusi bulanan)
+   - Window/Seq  : Sliding window (misal: 12 bulan atau hingga 60 bulan
+                   tergantung panjang histori per musim tanam)
+   - Fitur (6)   : Curah Hujan (mm), Suhu Rata-rata (°C), Suhu Maks (°C),
+                   Suhu Min (°C), Kelembaban Rata-rata (%), Lama Penyinaran (jam/hari)
+   - Bentuk tensor: (N_samples, T_timesteps, 6_features)
+   - Scaling     : MinMaxScaler / StandardScaler (di-fit HANYA pada data train)
+
+B. Input Statis (untuk digabung ke Random Forest):
+   - Sumber      : Dinas Pertanian & Perkebunan / Observasi Lapangan
+   - Fitur Tanah : Tekstur (Pasir/Lanau/Lempung -> One-Hot/Ordinal),
+                   pH (0-14), N (mg/kg), P (mg/kg), K (cmol/kg atau mg/kg),
+                   Karbon Organik (%), Drainase (Baik/Rusak)
+   - Fitur Lahan : Ketinggian tempat (mdpl), Risiko bencana & hama (Rendah/Sedang/Tinggi)
+   - Catatan     : Samakan satuan K (di tabel proposal masih campur mg/kg & cmol/kg).
+
+C. Target / Label (Ground Truth):
+   - Variabel terikat: Nama Varietas (25-30 varietas Padi, Jagung, Kedelai)
+   - PENTING (Perlu dikunci sejak awal):
+     Definisikan aturan ground truth secara jelas: pasangan (Lokasi + Musim/Tahun)
+     diberi label varietas yang terbukti memiliki produktivitas/kesesuaian tertinggi
+     pada kondisi tersebut, atau menggunakan skema multi-label / ranking kecocokan.
+
+
+3. FASE PENGEMBANGAN TEKNIS (STEP-BY-STEP)
+--------------------------------------------------------------------------------
+
+FASE 1: Data Preparation & Anti-Leakage Split
+1. Audit & cleaning data (missing value agroklimat dengan interpolasi temporal;
+   outlier dengan IQR; standarisasi satuan N, P, K).
+2. Feature engineering awal:
+   - Fitur siklikal bulan (sin/cos bulan) untuk menangkap pola musim.
+   - Moving average / anomali curah hujan & suhu (opsional untuk pembanding).
+3. Pembagian Dataset (80% Train / 20% Test):
+   - WAJIB gunakan Temporal/Chronological Split (misal 2020-2024 Train,
+     2025 Test) atau GroupKFold per lokasi/tahun agar tidak ada data leakage.
+   - Jangan gunakan random split standar pada data time-series.
+
+FASE 2: Pembangunan & Pelatihan LSTM (Temporal Feature Extractor)
+1. Arsitektur LSTM (sesuai proposal):
+   - Input Layer : (T_timesteps, n_climate_features)
+   - LSTM Layer 1: 128 units, return_sequences=True + Dropout (0.2 - 0.3)
+   - LSTM Layer 2: 64 units, return_sequences=False + Dropout (0.2 - 0.3)
+   - Dense Layer : 32 units (aktivasi ReLU/linear) -> ini yang diekstrak sebagai
+                   vektor fitur temporal 32 dimensi.
+2. Strategi Training LSTM (pilih/uji dua pendekatan):
+   - Pendekatan A (Supervised Pre-training): Tambah layer output Dense(n_varietas,
+     softmax) untuk melatih bobot LSTM memprediksi kelas varietas (atau prediksi
+     produktivitas/iklim berikutnya), lalu potong layer output dan ambil output
+     Dense-32 sebagai feature extractor.
+   - Pendekatan B (Autoencoder LSTM): Latih LSTM untuk merekonstruksi sekuens
+     iklim 60 bulan sehingga vektor 32-dim murni merepresentasikan pola iklim
+     tanpa risiko overfit ke label yang jumlahnya sedikit.
+3. Optimizer & Regularisasi:
+   - Optimizer: Adam (lr=1e-3), EarlyStopping (patience=10-15), ReduceLROnPlateau.
+
+FASE 3: Feature Concatenation & Random Forest Classifier
+1. Ekstrak vektor temporal 32-dim dari LSTM untuk seluruh data train dan test
+   (pastikan tanpa leakage).
+2. Gabungkan (concatenate):
+   X_hybrid = [Vektor_LSTM (32 dim) | Fitur_Statis_Tanah_Lingkungan]
+3. Latih Random Forest Classifier pada X_hybrid:
+   - Tangani class imbalance (jika distribusi 25-30 varietas tidak seimbang)
+     dengan class_weight='balanced' atau SMOTE pada data train saja.
+   - Hyperparameter tuning (GridSearchCV / Optuna dengan TimeSeriesSplit):
+     * n_estimators      : [100, 200, 300, 500]
+     * max_depth         : [None, 10, 20, 30]
+     * min_samples_split : [2, 5, 10]
+     * min_samples_leaf  : [1, 2, 4]
+     * max_features      : ['sqrt', 'log2']
+
+FASE 4: Recommendation Engine & Interpretabilitas
+1. Prediksi probabilitas kelas dari Random Forest (`predict_proba`).
+2. Urutkan probabilitas secara menurun untuk menghasilkan Top-K Varietas
+   (misal Top-3 atau Top-5) beserta skor kecocokan (%).
+3. Ekstrak Feature Importance (Gini importance / Permutation importance / SHAP)
+   untuk menjelaskan faktor dominan (misal: curah hujan historis, pH, N/P/K)
+   sebagai justifikasi agronomis bagi penyuluh/petani.
+
+FASE 5: Benchmarking & Evaluasi Komprehensif
+1. Model Pembanding (Baseline Single Models) pada split data yang SAMA:
+   - Baseline 1: Random Forest (hanya fitur statis + agregat rata-rata iklim)
+   - Baseline 2: XGBoost / Gradient Boosting (fitur statis + agregat iklim)
+   - Baseline 3: Standalone LSTM (langsung softmax ke varietas, atau input statis
+                 diulang tiap timestep)
+   - Model Usulan: Hybrid LSTM + Random Forest
+2. Metrik Evaluasi:
+   - Klasifikasi : Accuracy, Precision (macro/weighted), Recall, F1-Score,
+                   Confusion Matrix.
+   - Rekomendasi : Top-K Accuracy (Top-3 / Top-5 Accuracy), MRR (Mean Reciprocal Rank).
+   - Uji Statistik: Bandingkan performa antar model secara konsisten (misal uji
+                    signifikansi / cross-validation folds).
+
+
+4. RISIKO TEKNIS & MITIGASI
+--------------------------------------------------------------------------------
+1. Jumlah Sampel Kecil vs Banyak Kelas (20 lokasi, 25-30 varietas):
+   - Risiko : Overfitting jika jumlah baris data latih terlalu sedikit dibanding
+              jumlah kelas varietas.
+   - Mitigasi: Gunakan data multi-tahun/multi-musim per lokasi, evaluasi skema
+              hierarchical classification (Komoditas -> Varietas), atau gunakan
+              LSTM Autoencoder agar ekstraksi fitur tidak boros parameter label.
+
+2. Ketidakcocokan Dimensi / Skala Data Statis vs Vektor LSTM:
+   - Risiko : 32 fitur LSTM mendominasi ~9 fitur statis saat masuk ke RF.
+   - Mitigasi: Lakukan feature selection / PCA pada vektor LSTM (uji 8, 16, 32 dim)
+              dan cek kontribusi fitur statis lewat feature importance.
+
+3. Reproducibility & Environment:
+   - Tetapkan random seed (numpy, tensorflow/pytorch, sklearn).
+   - Catat semua eksperimen dengan MLflow (parameter, metrik, artefak model).
+
+
+5. STRUKTUR REPO KODE YANG DISARANKAN (NEXT STEP)
+--------------------------------------------------------------------------------
+projekskripsi/
+├── data/
+│   ├── raw/                 # Data mentah BMKG, Kementan, Dinas Pertanian
+│   └── processed/           # Dataset bersih & siap latih
+├── notebooks/               # EDA & eksperimen awal
+├── src/
+│   ├── preprocessing.py     # Cleaning, scaling, sliding window, temporal split
+│   ├── lstm_encoder.py      # Arsitektur & training LSTM (extract 32-dim)
+│   ├── rf_classifier.py     # Concatenation, training & tuning Random Forest
+│   ├── recommender.py       # Top-K ranking & feature importance justification
+│   └── evaluate.py          # Perbandingan baseline vs hybrid + metrik
+├── configs/                 # Konfigurasi hyperparameter (YAML/JSON)
+└── requirements.txt         # tensorflow/torch, scikit-learn, pandas, numpy, mlflow
+================================================================================
+

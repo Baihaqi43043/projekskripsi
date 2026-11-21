@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+data/raw/*.csv
+data/raw/*.parquet
+data/processed/*.npz
+data/processed/*.csv
+models/
+mlruns/
+.cache/
+
