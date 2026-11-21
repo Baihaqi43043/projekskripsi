@@ -55,16 +55,51 @@ B. data/raw/aceh_utara_tanah_statis.csv
   kelembaban, curah hujan).
 
 
-4. DAFTAR DATA YANG HARUS DILENGKAPI UNTUK VERSI FINAL (SESUAI PDF)
+4. PERBANDINGAN KEBUTUHAN PDF VS KONDISI SAAT INI (YANG BELUM ADA)
 --------------------------------------------------------------------------------
-[ ] Perluas titik lokasi dari 5 menjadi 20 titik pengamatan di Aceh Utara.
-[ ] Ganti/validasi data agroklimat dengan data resmi BMKG (terutama satuan
-    lama_penyinaran dalam jam/hari).
+A. Lokasi Pengamatan (Bagian 3.7 PDF)
+   - Kebutuhan PDF : 20 titik pengamatan di Kabupaten Aceh Utara.
+   - Kondisi kini  : Baru 5 titik (L001 - L005).
+   - Belum ada     : 15 titik lokasi tambahan.
+
+B. Data Agroklimat Time-Series (Tabel 3.1 PDF)
+   - Kebutuhan PDF : 6 variabel bulanan 2020-2025 dari BMKG
+                     (curah_hujan, suhu_rata_rata, suhu_maksimal, suhu_minimum,
+                      kelembaban_rata_rata, lama_penyinaran [jam/hari]).
+   - Kondisi kini  : 6/6 variabel sudah ada dari NASA POWER API (2020-2025).
+   - Belum ada     : Data resmi BMKG; satuan `lama_penyinaran` saat ini masih
+                     radiasi matahari (ALLSKY_SFC_SW_DWN), bukan jam/hari.
+
+C. Data Kondisi Tanah & Lingkungan (Tabel 3.2 PDF)
+   - Sudah riil (4): tekstur_tanah, ph_tanah, karbon_organik (SoilGrids),
+                     ketinggian_tempat (konfigurasi).
+   - Belum ada / masih placeholder (5):
+     * nitrogen (mg/kg)           -> masih 0.15 (harus dari lab/Dinas)
+     * fosfor (mg/kg)             -> masih 12.0 (harus dari lab/Dinas)
+     * kalium (mg/kg atau cmol/kg)-> masih 0.35 (harus dari lab/Dinas)
+     * drainase (Baik/Rusak)      -> masih "Baik" semua (harus observasi)
+     * risiko_bencana_hama        -> masih "Rendah" semua (harus data Dinas)
+
+D. Data Varietas Tanaman & Label Target (Tabel 3.3 & Bagian 3.7 PDF)
+   - Kebutuhan PDF : 25-30 varietas (Padi, Jagung, Kedelai) dari Kementan RI
+                     beserta atribut (umur_panen, potensi_hasil, ketahanan_hama,
+                     kebutuhan_air, ketinggian_optimal) + label varietas aktual.
+   - Kondisi kini  : Belum ada file dataset 25-30 varietas Kementan; target di
+                     main.py masih memakai 6 kelas label prototipe.
+
+E. Panjang Sekuens LSTM (Bagian 3.10 PDF)
+   - Kebutuhan PDF : 60 bulan.
+   - Kondisi kini  : Diset 12 bulan di configs/model_config.yaml agar dari
+                     total 72 bulan (2020-2025) masih cukup banyak sampel latih.
+
+
+5. CHECKLIST DATA YANG HARUS DILENGKAPI UNTUK VERSI FINAL
+--------------------------------------------------------------------------------
+[ ] Tambah 15 titik lokasi lagi agar genap 20 titik pengamatan di Aceh Utara.
+[ ] Ganti/validasi data agroklimat dengan data resmi BMKG (satuan jam/hari).
 [ ] Isi nilai riil nitrogen, fosfor, kalium, drainase, dan risiko_bencana_hama
-    dari Dinas Pertanian dan Perkebunan Aceh / observasi lapangan.
-[ ] Tambahkan dataset karakteristik 25-30 varietas (Padi, Jagung, Kedelai) dari
-    Kementerian Pertanian RI (umur panen, potensi hasil, ketahanan hama,
-    kebutuhan air, ketinggian optimal).
+    dari Dinas Pertanian dan Perkebunan Aceh / uji lab / observasi lapangan.
+[ ] Buat/masukkan dataset karakteristik 25-30 varietas dari Kementan RI.
 [ ] Ganti label prototipe dengan label ground-truth varietas unggulan aktual
     per lokasi/musim tanam.
 ================================================================================
