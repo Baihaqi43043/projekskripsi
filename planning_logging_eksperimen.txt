@@ -1,0 +1,120 @@
+================================================================================
+PLANNING SISTEM LOGGING OTOMATIS (PERUBAHAN KODE & HASIL TRAINING MODEL)
+Untuk Dokumentasi Eksperimen & Data Laporan Disertasi/Skripsi
+================================================================================
+
+1. TUJUAN UTAMA
+--------------------------------------------------------------------------------
+Menghasilkan catatan riwayat eksperimen yang rapi, otomatis, dan bisa langsung
+dipakai untuk tabel/grafik laporan penelitian tanpa harus mencatat manual setiap
+kali selesai training (baik di laptop lokal maupun di Google Colab).
+
+Dua hal yang dicatat otomatis setiap kali menjalankan training:
+A. Jejak Perubahan Kode & Konfigurasi (Reproducibility):
+   - Timestamp eksperimen (YYYY-MM-DD HH:MM:SS)
+   - Git commit hash (`git rev-parse --short HEAD`) & branch aktif
+   - Status apakah ada perubahan kode yang belum di-commit (`dirty`/`clean`)
+   - Snapshot parameter yang dipakai (`configs/model_config.yaml` / `best_params`)
+   - Versi/nama dataset (misal: `5_lokasi_prototipe` vs `20_lokasi_aceh_utara_riil`)
+
+B. Hasil Training & Evaluasi Model (Untuk Bab IV):
+   - Tim LSTM : `hidden_size`, `embedding_dim`, `dropout`, `epochs`, `lr`,
+                `train_loss_awal`, `train_loss_akhir`, durasi training (detik).
+   - Tim RF   : `n_estimators`, `max_depth`, `min_samples_split`, `class_weight`,
+                `accuracy`, `precision_weighted`, `recall_weighted`, `f1_weighted`,
+                `top_3_accuracy`, serta perbandingan dengan `Baseline RF`.
+
+
+2. STRUKTUR OUTPUT LOG YANG DIRANCANG
+--------------------------------------------------------------------------------
+projekskripsi/
+├── results/
+│   ├── experiment_history.csv        # Tabel rekap 1 baris per run (buka di Excel)
+│   ├── changelog_kode.txt            # Rekap otomatis riwayat git commit + deskripsi
+│   └── runs/
+│       └── 20261121_163000_hybrid_rf/
+│           ├── summary.json          # Detail lengkap metrik + parameter + git hash
+│           ├── config_snapshot.yaml  # Salinan konfigurasi saat run tersebut
+│           ├── classification_report.txt
+│           ├── confusion_matrix.png
+│           └── feature_importance.png
+└── src/
+    └── experiment_logger.py          # Modul logger otomatis (dipanggil oleh script)
+
+
+3. FORMAT KOLOM `results/experiment_history.csv`
+--------------------------------------------------------------------------------
+Setiap kali `train_lstm.py`, `train_rf.py`, atau notebook Colab selesai jalan,
+1 baris baru otomatis ditambahkan (append) ke CSV dengan kolom:
+- `run_id`              : ID unik berdasarkan waktu (misal `20261121_163510`)
+- `timestamp`           : Waktu selesai training
+- `git_commit`          : Hash commit Git saat kode dijalankan (misal `42e3f36`)
+- `git_dirty`           : `True/False` (apakah ada editan yang belum di-commit)
+- `stage`               : `LSTM` | `Baseline_RF` | `Hybrid_LSTM_RF` | `Hybrid_RF_Tuned`
+- `environment`         : `local` atau `google_colab`
+- `train_samples`       : Jumlah data latih
+- `test_samples`        : Jumlah data uji
+- `num_classes`         : Jumlah kelas varietas
+- `hyperparameters`     : Ringkasan parameter (JSON string)
+- `loss_akhir`          : Nilai loss akhir (khusus LSTM)
+- `accuracy`            : Skor Accuracy (khusus klasifikasi)
+- `precision_weighted`  : Skor Precision
+- `recall_weighted`     : Skor Recall
+- `f1_weighted`         : Skor F1-Score
+- `top_3_accuracy`      : Skor Top-3 Accuracy
+- `top_features`        : 5 fitur paling berpengaruh
+- `duration_sec`        : Lama proses training (detik)
+- `catatan`             : Catatan singkat eksperimen
+
+
+4. INTEGRASI DENGAN ALUR KERJA YANG SUDAH ADA
+--------------------------------------------------------------------------------
+1. Modul Baru (`src/experiment_logger.py`):
+   - Fungsi `get_git_info()` -> baca commit hash & status repo secara otomatis.
+   - Fungsi `log_experiment(...)` -> append 1 baris ke `results/experiment_history.csv`
+     dan simpan file detail JSON + config snapshot ke `results/runs/<run_id>/`.
+   - Fungsi `export_git_changelog()` -> ekspor riwayat commit (`git log`) ke
+     `results/changelog_kode.txt` untuk dokumentasi perubahan kode.
+
+2. Integrasi ke `train_lstm.py` (Tim LSTM):
+   - Catat waktu mulai & selesai, loss epoch awal & akhir, serta parameter LSTM
+     secara otomatis ke `results/experiment_history.csv`.
+
+3. Integrasi ke `train_rf.py` (Tim Random Forest Lokal):
+   - Otomatis mencatat 2 baris sekaligus (`Baseline_RF` dan `Hybrid_LSTM_RF`) agar
+     selalu ada pembanding di setiap versi kode/data, plus simpan grafik
+     Confusion Matrix & Feature Importance (.png).
+
+4. Integrasi ke Google Colab (`notebooks/training_random_forest_colab.ipynb`):
+   - Di sel terakhir Colab, buat file `colab_run_log.csv` + `summary.json` +
+     gambar `.png` yang ikut ter-download bersama `hybrid_rf_tuned.pkl`.
+   - Saat dipindahkan ke folder `results/runs/` di laptop, skrip penggabung bisa
+     langsung memasukkannya ke `results/experiment_history.csv`.
+
+5. Opsional (Sesuai Proposal PDF Bagian 3.9 - MLflow):
+   - Jika suatu saat butuh tampilan dashboard grafik interaktif di browser,
+     `experiment_logger.py` bisa ditambah opsi `use_mlflow=True` untuk mengirim
+     metrik yang sama ke `mlruns/` lokal (`mlflow ui`).
+
+
+5. ATURAN GIT UNTUK LOG EKSPERIMEN
+--------------------------------------------------------------------------------
+- `results/experiment_history.csv`, `results/changelog_kode.txt`, dan folder
+  `results/runs/*/summary.json` serta `.png` BOLEH di-commit ke Git karena
+  ukurannya kecil dan menjadi bukti progres eksperimen kamu & kawanmu.
+- File bobot besar (`models/*.pt`, `models/*.pkl`, `mlruns/`) tetap di-ignore di
+  `.gitignore` agar repo tidak berat.
+- Tips disiplin: biasakan `git commit` sebelum menjalankan eksperimen besar
+  supaya `git_commit` di log selalu bersih (`git_dirty=False`) dan kode di balik
+  angka akurasi tersebut selalu bisa dilacak ulang.
+
+
+6. TAHAP IMPLEMENTASI (STATUS)
+--------------------------------------------------------------------------------
+[x] Tahap 1 : Buat `src/experiment_logger.py` & folder `results/`
+[x] Tahap 2 : Pasang logger otomatis di `train_lstm.py` & `train_rf.py`
+[x] Tahap 3 : Tambahkan output log & gambar grafik otomatis di notebook Colab
+[x] Tahap 4 : Tambah utilitas ekspor `git log` -> `results/changelog_kode.txt`
+[x] Tahap 5 : Uji jalan `main.py` untuk memastikan CSV, JSON, & PNG terbuat rapi
+================================================================================
+

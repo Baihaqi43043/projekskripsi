@@ -76,6 +76,7 @@ def train_lstm_encoder(
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
+    loss_history: list[float] = []
     model.train()
     for epoch in range(1, epochs + 1):
         total_loss = 0.0
@@ -87,10 +88,16 @@ def train_lstm_encoder(
             loss.backward()
             optimizer.step()
             total_loss += loss.item() * len(bx)
+        avg_loss = total_loss / len(dataset)
+        loss_history.append(avg_loss)
         if epoch == 1 or epoch % 10 == 0 or epoch == epochs:
-            avg_loss = total_loss / len(dataset)
             print(f"  [LSTM] Epoch {epoch:02d}/{epochs} - Loss: {avg_loss:.4f}")
 
+    model.training_history_ = {
+        "loss_awal": loss_history[0] if loss_history else None,
+        "loss_akhir": loss_history[-1] if loss_history else None,
+        "loss_per_epoch": loss_history,
+    }
     return model
 
 
