@@ -29,10 +29,8 @@ B. data/raw/aceh_utara_tanah_statis.csv
      * L005 : Kuta Makmur     (5.1067, 97.1056) - elevasi 25.0 mdpl
    - Sumber      : ISRIC SoilGrids v2.0 REST API (kedalaman 0-15 cm) + Konfigurasi YAML
    - Status Isi  :
-     * DATA RIIL SoilGrids    : L002 (Matangkuli) & L005 (Kuta Makmur) untuk kolom
-                                tekstur_tanah, ph_tanah, dan karbon_organik.
-     * NILAI FALLBACK/DEFAULT : L001, L003, L004 (karena API SoilGrids sempat timeout:
-                                tekstur=Lempung, ph_tanah=6.1, karbon_organik=1.5).
+     * DATA RIIL SoilGrids    : Semua 5 lokasi (L001 - L005) sudah terisi data riil
+                                untuk kolom tekstur_tanah, ph_tanah, dan karbon_organik.
      * PLACEHOLDER SEMENTARA  : nitrogen (0.15), fosfor (12.0), kalium (0.35),
                                 drainase (Baik), risiko_bencana_hama (Rendah).
                                 (Kolom ini belum tersedia di SoilGrids, menunggu data

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import time
 from typing import Any
 
 import pandas as pd
@@ -161,11 +162,18 @@ def collect_aceh_utara_sample(config: dict[str, Any]) -> tuple[pd.DataFrame, pd.
         )
         climate_frames.append(c_df)
 
-        try:
-            print(f"Mengambil data SoilGrids untuk {loc_id} ({loc['name']})...")
-            s_rec = fetch_soilgrids_point(lat=loc["lat"], lon=loc["lon"], id_lokasi=loc_id)
-        except Exception as exc:
-            print(f"  [Info] SoilGrids timeout untuk {loc_id}: {exc}. Memakai nilai default sementara.")
+        s_rec = None
+        for attempt in range(1, 5):
+            try:
+                print(f"Mengambil data SoilGrids untuk {loc_id} ({loc['name']}) [percobaan {attempt}]...")
+                s_rec = fetch_soilgrids_point(lat=loc["lat"], lon=loc["lon"], id_lokasi=loc_id)
+                break
+            except Exception as exc:
+                print(f"  [Info] SoilGrids gagal percobaan {attempt} untuk {loc_id}: {exc}")
+                time.sleep(1)
+
+        if s_rec is None:
+            print(f"  [Info] Memakai nilai default sementara untuk {loc_id}.")
             s_rec = {
                 "id_lokasi": loc_id,
                 "lintang": loc["lat"],
@@ -179,6 +187,7 @@ def collect_aceh_utara_sample(config: dict[str, Any]) -> tuple[pd.DataFrame, pd.
                 "drainase": "Baik",
                 "risiko_bencana_hama": "Rendah",
             }
+        time.sleep(1)
         s_rec["nama_lokasi"] = loc["name"]
         s_rec["ketinggian_tempat"] = loc.get("ketinggian_tempat", 5.0)
         soil_records.append(s_rec)
