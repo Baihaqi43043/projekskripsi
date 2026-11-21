@@ -9,10 +9,13 @@ A. data/raw/aceh_utara_agroklimat_harian.csv
    - Jumlah data : 10.960 baris (5 lokasi x 2.192 hari, 1 Jan 2020 - 31 Des 2025)
    - Sumber      : NASA POWER API (https://power.larc.nasa.gov/api/temporal/daily/point)
                    Community: AG (Agroclimatology).
-   - Kolom       : id_lokasi, tanggal (YYYY-MM-DD), tahun, bulan, curah_hujan,
+   - Kolom       : id_lokasi, tanggal (YYYY-MM-DD), tahun, bulan, hari, curah_hujan,
                    suhu_rata_rata, suhu_maksimal, suhu_minimum,
-                   kelembaban_rata_rata, lama_penyinaran.
+                   kelembaban_rata_rata, lama_penyinaran, nama_lokasi.
    - Status      : DATA RIIL (100% terisi dari NASA POWER API).
+   - Split LSTM (data/raw/lstm/):
+     * training/ (2020 - 2024) : 9.135 baris (01 Jan 2020 s/d 31 Des 2024)
+     * testing/  (2025)        : 1.825 baris (01 Jan 2025 s/d 31 Des 2025)
 
 B. data/raw/aceh_utara_agroklimat_bulanan.csv
    - Jumlah data : 360 baris (5 lokasi x 72 bulan, periode Jan 2020 - Des 2025)

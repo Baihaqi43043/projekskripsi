@@ -96,3 +96,30 @@ def build_sequences_and_static(
         "seq_scaler": seq_scaler,
         "stat_scaler": stat_scaler,
     }
+
+
+def split_daily_climate_dataset(
+    input_csv: str = "data/raw/aceh_utara_agroklimat_harian.csv",
+    output_base_dir: str = "data/raw/lstm",
+    train_start_year: int = 2020,
+    train_end_year: int = 2024,
+    test_year: int = 2025,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Pisahkan dataset agroklimat harian menjadi folder training (2020-2024) dan testing (2025)."""
+    import os
+
+    df = pd.read_csv(input_csv)
+    train_df = df[(df["tahun"] >= train_start_year) & (df["tahun"] <= train_end_year)].copy()
+    test_df = df[df["tahun"] == test_year].copy()
+
+    training_dir = os.path.join(output_base_dir, "training")
+    testing_dir = os.path.join(output_base_dir, "testing")
+    os.makedirs(training_dir, exist_ok=True)
+    os.makedirs(testing_dir, exist_ok=True)
+
+    filename = os.path.basename(input_csv)
+    train_df.to_csv(os.path.join(training_dir, filename), index=False)
+    test_df.to_csv(os.path.join(testing_dir, filename), index=False)
+
+    return train_df, test_df
+
