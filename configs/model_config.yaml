@@ -1,5 +1,5 @@
 project:
-  name: "Hybrid LSTM-Random Forest Crop Variety Recommender"
+  name: "Model Hybrid LSTM-Random Forest Rekomendasi Varietas Tanaman"
   seed: 42
 
 data:
@@ -13,38 +13,48 @@ data:
       name: "Lhoksukon"
       lat: 5.0528
       lon: 97.3117
+      ketinggian_tempat: 8.0
     - id: "L002"
       name: "Matangkuli"
       lat: 5.0272
       lon: 97.2714
+      ketinggian_tempat: 12.0
     - id: "L003"
       name: "Syamtalira Aron"
       lat: 5.0911
       lon: 97.2133
+      ketinggian_tempat: 6.0
     - id: "L004"
       name: "Dewantara"
       lat: 5.2356
       lon: 97.0086
+      ketinggian_tempat: 4.0
     - id: "L005"
       name: "Kuta Makmur"
       lat: 5.1067
       lon: 97.1056
+      ketinggian_tempat: 25.0
 
+  # Tabel 3.1 PDF: Data Agroklimat (Time-Series)
   climate_features:
-    - "PRECTOTCORR"       # Curah hujan (mm/hari -> diagregasi bulanan)
-    - "T2M"               # Suhu rata-rata (°C)
-    - "T2M_MAX"           # Suhu maksimal (°C)
-    - "T2M_MIN"           # Suhu minimal (°C)
-    - "RH2M"              # Kelembaban relatif (%)
-    - "ALLSKY_SFC_SW_DWN" # Radiasi/penyinaran matahari
+    - "curah_hujan"
+    - "suhu_rata_rata"
+    - "suhu_maksimal"
+    - "suhu_minimum"
+    - "kelembaban_rata_rata"
+    - "lama_penyinaran"
 
+  # Tabel 3.2 PDF: Data Kondisi Tanah dan Lingkungan (Statis)
   static_features:
-    - "phh2o"
-    - "clay"
-    - "sand"
-    - "silt"
-    - "soc"
-    - "elevation"
+    - "tekstur_tanah"
+    - "ph_tanah"
+    - "nitrogen"
+    - "fosfor"
+    - "kalium"
+    - "karbon_organik"
+    - "drainase"
+    - "ketinggian_tempat"
+    - "risiko_bencana_hama"
 
   sequence_length: 12     # Sliding window 12 bulan (bisa diubah ke 24/60)
   train_ratio: 0.8
@@ -67,4 +77,3 @@ random_forest:
 
 recommendation:
   top_k: 3
-

@@ -1,4 +1,4 @@
-"""End-to-end pipeline runner for Hybrid LSTM-Random Forest Crop Variety Recommender."""
+"""Pipeline end-to-end Model Hybrid LSTM-Random Forest untuk Rekomendasi Varietas Tanaman."""
 
 from __future__ import annotations
 
@@ -15,38 +15,38 @@ from src.recommender import get_feature_importance_summary, recommend_top_k
 from src.rf_classifier import concatenate_features, train_random_forest
 
 
-def assign_prototype_variety_labels(
+def beri_label_varietas_prototipe(
     climate_df: pd.DataFrame,
     soil_df: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Assign agro-ecological prototype variety labels when official Dinas labels are not yet available.
+    """Berikan label varietas prototipe berbasis aturan agroekologi.
 
-    Replace this step with actual Dinas Pertanian / Kementan ground-truth variety labels
-    once field data is collected.
+    Catatan: Ganti fungsi ini dengan label varietas aktual dari Dinas Pertanian / Kementan
+    setelah data lapangan tersedia.
     """
-    merged = climate_df.merge(soil_df, on="location_id", how="left")
+    merged = climate_df.merge(soil_df, on="id_lokasi", how="left")
     labels = []
     for _, row in merged.iterrows():
-        rain = row["PRECTOTCORR"]
-        temp = row["T2M"]
-        ph = row["phh2o"]
+        hujan = row["curah_hujan"]
+        suhu = row["suhu_rata_rata"]
+        ph = row["ph_tanah"]
 
-        if rain >= 200 and ph >= 6.0:
+        if hujan >= 200 and ph >= 6.0:
             labels.append("Padi_Inpari_32")
-        elif rain >= 150 and temp >= 26.5:
+        elif hujan >= 150 and suhu >= 26.5:
             labels.append("Padi_Ciherang")
-        elif rain >= 120 and ph < 6.0:
+        elif hujan >= 120 and ph < 6.0:
             labels.append("Padi_Inpari_42")
-        elif 80 <= rain < 150 and temp >= 26.0:
+        elif 80 <= hujan < 150 and suhu >= 26.0:
             labels.append("Jagung_BISI_18")
-        elif 60 <= rain < 120:
+        elif 60 <= hujan < 120:
             labels.append("Jagung_NK_212")
         else:
             labels.append("Kedelai_Anjasmoro")
 
-    climate_df = climate_df.copy()
-    climate_df["variety"] = labels
-    return climate_df
+    out = climate_df.copy()
+    out["varietas"] = labels
+    return out
 
 
 def main() -> None:
@@ -55,34 +55,36 @@ def main() -> None:
 
     seed = cfg["project"]["seed"]
     raw_dir = cfg["data"]["raw_dir"]
-    climate_path = os.path.join(raw_dir, "aceh_utara_climate_monthly.csv")
-    soil_path = os.path.join(raw_dir, "aceh_utara_soil_static.csv")
+    climate_path = os.path.join(raw_dir, "aceh_utara_agroklimat_bulanan.csv")
+    soil_path = os.path.join(raw_dir, "aceh_utara_tanah_statis.csv")
 
     if os.path.exists(climate_path) and os.path.exists(soil_path):
-        print("Loading cached Aceh Utara dataset from data/raw/...")
+        print("Memuat dataset Aceh Utara dari data/raw/...")
         climate_df = pd.read_csv(climate_path)
         soil_df = pd.read_csv(soil_path)
     else:
-        print("Fetching real agroclimate (NASA POWER) & soil (SoilGrids) for Aceh Utara...")
+        print("Mengambil data agroklimat (NASA POWER) & tanah (SoilGrids) untuk Aceh Utara...")
         climate_df, soil_df = collect_aceh_utara_sample(cfg)
 
-    climate_df = assign_prototype_variety_labels(climate_df, soil_df)
+    climate_df = beri_label_varietas_prototipe(climate_df, soil_df)
 
     data = build_sequences_and_static(
         climate_df=climate_df,
         static_df=soil_df,
         climate_cols=cfg["data"]["climate_features"],
         static_cols=cfg["data"]["static_features"],
-        target_col="variety",
+        target_col="varietas",
         seq_len=cfg["data"]["sequence_length"],
         train_ratio=cfg["data"]["train_ratio"],
     )
 
     num_classes = len(data["label_encoder"].classes_)
-    print(f"\nDataset ready -> Train sequences: {data['X_seq_train'].shape}, "
-          f"Test sequences: {data['X_seq_test'].shape}, Classes: {num_classes}")
+    print(
+        f"\nDataset siap -> Train: {data['X_seq_train'].shape}, "
+        f"Test: {data['X_seq_test'].shape}, Jumlah Varietas: {num_classes}"
+    )
 
-    print("\n1. Training LSTM Temporal Encoder...")
+    print("\n1. Melatih LSTM Temporal Encoder...")
     lstm_cfg = cfg["lstm"]
     lstm_model = train_lstm_encoder(
         X_seq_train=data["X_seq_train"],
@@ -104,7 +106,7 @@ def main() -> None:
     X_hybrid_train = concatenate_features(emb_train, data["X_stat_train"])
     X_hybrid_test = concatenate_features(emb_test, data["X_stat_test"])
 
-    print("\n2. Training Hybrid Random Forest Classifier...")
+    print("\n2. Melatih Hybrid Random Forest Classifier...")
     rf_cfg = cfg["random_forest"]
     hybrid_rf = train_random_forest(
         X_train=X_hybrid_train,
@@ -117,7 +119,7 @@ def main() -> None:
         seed=seed,
     )
 
-    # Baseline: Random Forest on static + mean-aggregated climate features only
+    # Baseline: Random Forest dengan fitur statis + rata-rata iklim saja
     X_base_train = np.hstack([data["X_seq_train"].mean(axis=1), data["X_stat_train"]])
     X_base_test = np.hstack([data["X_seq_test"].mean(axis=1), data["X_stat_test"]])
     baseline_rf = train_random_forest(
@@ -145,22 +147,21 @@ def main() -> None:
         top_k=top_k,
     )
 
-    print("\n=== EVALUATION COMPARISON ===")
-    print("Baseline RF (Static + Mean Climate):", base_metrics)
-    print("Hybrid LSTM + RF                   :", hybrid_metrics)
+    print("\n=== PERBANDINGAN EVALUASI ===")
+    print("Baseline RF (Statis + Rata-rata Iklim):", base_metrics)
+    print("Hybrid LSTM + RF                     :", hybrid_metrics)
 
-    feature_names = [f"lstm_feat_{i}" for i in range(lstm_cfg["embedding_dim"])] + cfg["data"]["static_features"]
+    feature_names = [f"fitur_temporal_lstm_{i}" for i in range(lstm_cfg["embedding_dim"])] + cfg["data"]["static_features"]
     top_feats = get_feature_importance_summary(hybrid_rf, feature_names, top_n=8)
-    print("\n=== TOP FEATURE IMPORTANCES (HYBRID) ===")
+    print("\n=== FEATURE IMPORTANCE TERATAS (HYBRID) ===")
     for name, score in top_feats:
         print(f"  - {name}: {score}")
 
     sample_recs = recommend_top_k(hybrid_rf, X_hybrid_test[:3], data["label_encoder"], top_k=top_k)
-    print("\n=== SAMPLE TOP-3 RECOMMENDATIONS (TEST SET) ===")
+    print("\n=== CONTOH REKOMENDASI TOP-3 (DATA UJI) ===")
     for idx, recs in enumerate(sample_recs, 1):
-        print(f"  Sample {idx}: {recs}")
+        print(f"  Sampel {idx}: {recs}")
 
 
 if __name__ == "__main__":
     main()
-

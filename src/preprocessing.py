@@ -1,10 +1,26 @@
-"""Preprocessing: temporal sequence windowing, scaling, and chronological split."""
+"""Preprocessing: encoding kategori, sliding window temporal, scaling, dan chronological split."""
 
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder, StandardScaler
+
+
+CATEGORICAL_MAPPINGS = {
+    "tekstur_tanah": {"Pasir": 0.0, "Lanau": 1.0, "Lempung": 2.0},
+    "drainase": {"Rusak": 0.0, "Baik": 1.0},
+    "risiko_bencana_hama": {"Rendah": 0.0, "Sedang": 1.0, "Tinggi": 2.0},
+}
+
+
+def encode_static_categories(df: pd.DataFrame) -> pd.DataFrame:
+    """Ubah kolom kategorikal tanah & lingkungan menjadi angka."""
+    out = df.copy()
+    for col, mapping in CATEGORICAL_MAPPINGS.items():
+        if col in out.columns and not pd.api.types.is_numeric_dtype(out[col]):
+            out[col] = out[col].map(mapping).fillna(0.0).astype(float)
+    return out
 
 
 def build_sequences_and_static(
@@ -16,9 +32,10 @@ def build_sequences_and_static(
     seq_len: int = 12,
     train_ratio: float = 0.8,
 ) -> dict[str, np.ndarray | LabelEncoder | StandardScaler]:
-    """Create sliding windows per location with chronological train/test split (no leakage)."""
-    merged = climate_df.merge(static_df, on="location_id", how="left")
-    merged = merged.sort_values(["location_id", "year", "month"]).reset_index(drop=True)
+    """Buat sliding window per lokasi dengan split kronologis (mencegah data leakage)."""
+    static_encoded = encode_static_categories(static_df)
+    merged = climate_df.merge(static_encoded, on="id_lokasi", how="left")
+    merged = merged.sort_values(["id_lokasi", "tahun", "bulan"]).reset_index(drop=True)
 
     label_encoder = LabelEncoder()
     merged["target_encoded"] = label_encoder.fit_transform(merged[target_col].astype(str))
@@ -26,7 +43,7 @@ def build_sequences_and_static(
     X_seq_train, X_stat_train, y_train = [], [], []
     X_seq_test, X_stat_test, y_test = [], [], []
 
-    for _, group in merged.groupby("location_id"):
+    for _, group in merged.groupby("id_lokasi"):
         group = group.reset_index(drop=True)
         if len(group) <= seq_len:
             continue
@@ -58,7 +75,7 @@ def build_sequences_and_static(
     y_tr = np.array(y_train, dtype=np.int64)
     y_te = np.array(y_test, dtype=np.int64)
 
-    # Fit scalers ONLY on training data to prevent data leakage
+    # Fit scaler HANYA pada data train untuk mencegah kebocoran data
     seq_scaler = StandardScaler()
     n_tr, t_len, n_c = X_seq_tr.shape
     X_seq_tr = seq_scaler.fit_transform(X_seq_tr.reshape(-1, n_c)).reshape(n_tr, t_len, n_c)
@@ -79,4 +96,3 @@ def build_sequences_and_static(
         "seq_scaler": seq_scaler,
         "stat_scaler": stat_scaler,
     }
-
