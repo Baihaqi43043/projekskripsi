@@ -99,7 +99,7 @@ def balik_skala(z: np.ndarray, stat: dict) -> np.ndarray:
     return out
 
 
-def main() -> None:
+def main(max_epoch: int = MAX_EPOCH, out_dir: str = OUT_DIR) -> None:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
     cfg = load_config()
@@ -109,12 +109,12 @@ def main() -> None:
     th = meta["tahun"].astype(int).to_numpy()
     tr, va, te = th <= TRAIN_END, th == VAL_YEAR, th == TEST_YEAR
     print(f"[LSTM-Harian] lokasi={d['id_lokasi'].nunique()} | jendela {WINDOW} hari | "
-          f"train={tr.sum()} val={va.sum()} test={te.sum()} sekuens | maks {MAX_EPOCH} epoch, batch {BATCH}")
+          f"train={tr.sum()} val={va.sum()} test={te.sum()} sekuens | maks {max_epoch} epoch, batch {BATCH}")
 
     t0 = time.perf_counter()
     model = train_forecast_encoder(
         X[tr], Y[tr], X[va], Y[va], hidden_1=lc["hidden_size_1"], hidden_2=lc["hidden_size_2"],
-        embedding_dim=lc["embedding_dim"], dropout=lc["dropout"], max_epochs=MAX_EPOCH, patience=MAX_EPOCH,
+        embedding_dim=lc["embedding_dim"], dropout=lc["dropout"], max_epochs=max_epoch, patience=max_epoch,
         batch_size=BATCH, learning_rate=lc["learning_rate"], seed=SEED,
     )
     durasi = time.perf_counter() - t0
@@ -150,19 +150,25 @@ def main() -> None:
         ev["mae_bulanan_test"][c] = {"lstm": round(float(np.mean(np.abs(p_b - a_b))), 3),
                                      "bias": round(float(np.mean(p_b - a_b)), 3)}
 
-    os.makedirs(OUT_DIR, exist_ok=True)
-    bulanan.to_csv(os.path.join(OUT_DIR, "embedding_bulanan.csv"), index=False)
-    with open(os.path.join(OUT_DIR, "evaluasi_ramalan.json"), "w", encoding="utf-8") as f:
+    os.makedirs(out_dir, exist_ok=True)
+    bulanan.to_csv(os.path.join(out_dir, "embedding_bulanan.csv"), index=False)
+    with open(os.path.join(out_dir, "evaluasi_ramalan.json"), "w", encoding="utf-8") as f:
         json.dump(ev, f, indent=2, ensure_ascii=False)
     os.makedirs("models", exist_ok=True)
-    torch.save(model.state_dict(), "models/lstm_harian.pt")
+    torch.save(model.state_dict(), f"models/lstm_harian_{max_epoch}epoch.pt")
 
     print("\nTest 2025 (satuan asli). Harian: MAE LSTM vs persistence | Rata-rata bulanan: MAE dan bias LSTM")
     for c in F:
         a, b = ev["mae_harian_test"][c], ev["mae_bulanan_test"][c]
         print(f"  {c:22s} harian {a['lstm']:7.3f} vs {a['persistence']:7.3f} | bulanan MAE {b['lstm']:6.3f} bias {b['bias']:+7.3f}")
-    print(f"\nEmbedding bulanan: {len(bulanan)} baris -> {OUT_DIR}/embedding_bulanan.csv")
+    print(f"\nEmbedding bulanan: {len(bulanan)} baris -> {out_dir}/embedding_bulanan.csv")
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    ap = argparse.ArgumentParser(description="LSTM harian -> rata-rata bulanan.")
+    ap.add_argument("--epoch", type=int, default=MAX_EPOCH, help="jumlah epoch maksimum")
+    ap.add_argument("--out", default=OUT_DIR, help="folder output")
+    a = ap.parse_args()
+    main(a.epoch, a.out)

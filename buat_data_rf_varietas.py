@@ -6,7 +6,7 @@ Fitur yang dipakai (hanya informasi yang tersedia SAAT keputusan tanam):
   - 8 karakteristik varietas : umur panen, potensi hasil, ketahanan hama, kebutuhan air,
                                ketinggian maks, komoditas (one-hot padi/jagung/kedelai)
   - 2 indeks musim bulan tanam (sin/cos) — opsional
-Target: skor_kecocokan (0-100) dan hasil_dummy_ton_ha.
+Target: skor_kecocokan (0-100), hasil_dummy_ton_ha, dan umur_panen_aktual_dummy (hari).
 
 TIDAK dipakai sebagai fitur (bocor jawaban): hujan_masa_tanam, suhu_masa_tanam, s_air … s_ketinggian.
 
@@ -42,7 +42,7 @@ FITUR_TANAH = ["tekstur_tanah", "ph_tanah", "nitrogen", "fosfor", "kalium", "kar
 FITUR_VARIETAS = ["umur_panen_hari_num", "potensi_hasil_num", "ketahanan_hama_skala", "kebutuhan_air_kode",
                   "ketinggian_maks_mdpl", "komoditas_padi", "komoditas_jagung", "komoditas_kedelai"]
 FITUR_MUSIM = ["bulan_tanam_sin", "bulan_tanam_cos"]
-TARGET = ["skor_kecocokan", "hasil_dummy_ton_ha"]
+TARGET = ["skor_kecocokan", "hasil_dummy_ton_ha", "umur_panen_aktual_dummy"]
 EVALUASI = ["peringkat", "varietas_terbaik"]
 KEBUTUHAN_AIR_KODE = {"Sedikit": 0, "Sedang": 1, "Banyak": 2}
 

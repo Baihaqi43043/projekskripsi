@@ -16,6 +16,7 @@ Skor kecocokan dihitung dengan fungsi kontinu (tanpa if-else yang memilih variet
   s_ketinggian ketinggian lokasi vs batas ketinggian optimal varietas
 
   hasil_dummy_ton_ha = potensi hasil varietas × skor/100 × noise
+  umur_panen_aktual_dummy = umur deskripsi × ((27 − 10) / (suhu masa tanam − 10))^0,5 + noise (thermal time)
 
 PERINGATAN: semua angka optimum di bawah adalah ASUMSI dari kisaran umum literatur agronomi,
 bukan data lapangan. Wajib divalidasi pakar/penyuluh sebelum dipakai sebagai dasar klaim.
@@ -53,6 +54,8 @@ DRAINASE = {("Padi", "Baik"): 0.95, ("Padi", "Rusak"): 1.0,
             ("Jagung", "Baik"): 1.0, ("Jagung", "Rusak"): 0.6,
             ("Kedelai", "Baik"): 1.0, ("Kedelai", "Rusak"): 0.55}
 RISIKO_LEVEL = {"Rendah": 0.0, "Sedang": 1.0, "Tinggi": 2.0}
+# Umur panen aktual: suhu acuan deskripsi varietas dan suhu basis perkembangan tanaman (°C)
+T_REF, T_BASIS = 27.0, 10.0
 BOBOT = {"s_air": 0.35, "s_suhu": 0.15, "s_ph": 0.20, "s_drainase": 0.10, "s_hama": 0.10, "s_ketinggian": 0.10}
 
 
@@ -121,6 +124,11 @@ def main() -> None:
     df["skor_kecocokan"] = np.clip(skor + rng.normal(0, 3.0, len(df)), 0, 100).round(2)
     df["hasil_dummy_ton_ha"] = (df["potensi_hasil_num"] * df["skor_kecocokan"] / 100.0
                                 * rng.lognormal(0, 0.08, len(df))).round(2)
+    # Umur panen aktual (thermal time): makin panas masa tanam, makin cepat matang.
+    # umur = umur_deskripsi × ((T_REF − T_BASIS) / (suhu_masa_tanam − T_BASIS))^0,5 + noise (sd 2 hari)
+    # Noise diambil SETELAH noise skor & hasil agar kolom lama tetap identik.
+    faktor = ((T_REF - T_BASIS) / (df["suhu_masa_tanam"] - T_BASIS)) ** 0.5
+    df["umur_panen_aktual_dummy"] = (df["umur_panen_hari_num"] * faktor + rng.normal(0, 2.0, len(df))).round(0)
 
     grp = df.groupby(["id_lokasi", "tahun", "bulan"])["skor_kecocokan"]
     df["peringkat"] = grp.rank(ascending=False, method="first").astype(int)
@@ -135,7 +143,7 @@ def main() -> None:
              "ph_tanah", "drainase", "ketinggian_tempat", "risiko_bencana_hama",
              "bulan_tumbuh", "hujan_masa_tanam", "suhu_masa_tanam",
              "s_air", "s_suhu", "s_ph", "s_drainase", "s_hama", "s_ketinggian",
-             "skor_kecocokan", "hasil_dummy_ton_ha", "peringkat", "varietas_terbaik", "split"]
+             "skor_kecocokan", "hasil_dummy_ton_ha", "umur_panen_aktual_dummy", "peringkat", "varietas_terbaik", "split"]
     df = df[kolom].sort_values(["tahun", "bulan", "id_lokasi", "peringkat"]).reset_index(drop=True)
     for c in ["hujan_masa_tanam", "suhu_masa_tanam", "s_air", "s_suhu", "s_ph", "s_drainase", "s_hama", "s_ketinggian"]:
         df[c] = df[c].round(4)
