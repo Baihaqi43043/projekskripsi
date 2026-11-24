@@ -147,7 +147,18 @@ Pilih **lokasi** dan **bulan tanam** (termasuk 1 bulan ke depan setelah data ter
   rekomendasi berbasis feature importance.
 
 Kondisi lahan bisa diubah manual di bagian "Kondisi lahan" (sesuai modul input manual proposal Bag. 3.8).
-Hasil aplikasi identik dengan `rekomendasi_top3_test2025.csv` dari pipeline (sudah diverifikasi 60/60).
+
+**Model 2 versi many-to-many (dipakai otomatis bila tersedia).** Jika `models/rf_varietas_hybrid.joblib`
+ada dan dibuat dari encoder LSTM yang sama dengan `models/proposal_bundle.joblib`, Model 2 menilai skor
+kecocokan **ke-25 varietas** (memakai karakteristik varietas) dan menampilkan perkiraan hasil
+(potensi hasil × skor/100). Urutan pembuatan:
+```bash
+python train_hybrid_proposal.py      # Model 1 (LSTM) + bundle
+python buat_data_dummy_varietas.py   # data many-to-many dummy
+python buat_data_rf_varietas.py      # fitur RF (vektor LSTM + tanah + varietas)
+python train_rf_varietas.py          # Model 2 (RF kecocokan varietas)
+```
+Jika encoder tidak cocok, aplikasi memberi peringatan dan kembali ke RF klasifikasi lama.
 
 ### E. BiLSTM Cuaca Harian (prediksi 1 hari ke depan)
 ```bash

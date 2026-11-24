@@ -82,8 +82,8 @@ def metrik_peringkat(df: pd.DataFrame, pred: np.ndarray, k: int = 3) -> dict:
     d["pred"] = pred
     top1, hit3, overlap3, rho, kom1 = [], [], [], [], []
     for _, g in d.groupby(GROUP):
-        true_rank = g.sort_values(TARGET, ascending=False)
-        pred_rank = g.sort_values("pred", ascending=False)
+        true_rank = g.sort_values(TARGET, ascending=False, kind="mergesort")
+        pred_rank = g.sort_values("pred", ascending=False, kind="mergesort")
         best = true_rank["nama_varietas"].iloc[0]
         p3 = list(pred_rank["nama_varietas"].iloc[:k])
         t3 = set(true_rank["nama_varietas"].iloc[:k])
@@ -199,19 +199,24 @@ def main(data_dir: str = DATA_DIR, label: str = "") -> None:
     # Contoh rekomendasi Top-3 model Hybrid (seed pertama) pada data uji
     model = best_models[hyb]
     d = te[GROUP + ["nama_lokasi", "nama_varietas", "komoditas", TARGET]].copy()
-    d["skor_prediksi"] = model.predict(te[konfigurasi[hyb]]).round(2)
+    d["skor_prediksi"] = model.predict(te[konfigurasi[hyb]])
     rek = []
     for (loc, th, bl), g in d.groupby(GROUP):
-        p = g.sort_values("skor_prediksi", ascending=False).head(3)
-        t = g.sort_values(TARGET, ascending=False).head(3)
+        p = g.sort_values("skor_prediksi", ascending=False, kind="mergesort").head(3)
+        t = g.sort_values(TARGET, ascending=False, kind="mergesort").head(3)
         rek.append({"id_lokasi": loc, "nama_lokasi": g["nama_lokasi"].iloc[0], "tahun": th, "bulan": bl,
-                    **{f"prediksi_{i + 1}": f"{r.nama_varietas} ({r.skor_prediksi})" for i, r in enumerate(p.itertuples())},
+                    **{f"prediksi_{i + 1}": f"{r.nama_varietas} ({r.skor_prediksi:.2f})" for i, r in enumerate(p.itertuples())},
                     **{f"sebenarnya_{i + 1}": f"{r.nama_varietas} ({r.skor_kecocokan})" for i, r in enumerate(t.itertuples())}})
     pd.DataFrame(rek).to_csv(os.path.join(run_dir, "rekomendasi_top3_test2025.csv"), index=False)
 
     os.makedirs("models", exist_ok=True)
-    joblib.dump({"model": model, "fitur": konfigurasi[hyb], "target": TARGET},
-                f"models/rf_varietas_hybrid{'_' + label.lower() if label else ''}.joblib")
+    imp_hyb = kelompok[kelompok["model"] == hyb].iloc[0].drop("model").to_dict()
+    joblib.dump({
+        "model": model, "fitur": konfigurasi[hyb], "target": TARGET,
+        "encoder_lstm": info["encoder_lstm"], "run_id": os.path.basename(run_dir),
+        "metrik_test": {k: round(float(sub[k].mean()), 4) for k in kunci},
+        "importance_kelompok": {k: float(v) for k, v in imp_hyb.items()},
+    }, f"models/rf_varietas_hybrid{'_' + label.lower() if label else ''}.joblib")
     export_git_changelog()
 
     print(f"\n=== HASIL TEST 2025 (rata-rata ± std, {len(SEEDS)} seed) ===")

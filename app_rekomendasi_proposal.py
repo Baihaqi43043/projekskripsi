@@ -140,7 +140,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
     <div class="card">
       <span class="tag m2">Model 2 · Random Forest</span>
       <h2>Top-3 varietas untuk <span id="t2"></span></h2>
-      <p class="note">Skor kecocokan = probabilitas kelas dari Random Forest.</p>
+      <p class="note" id="m2note">Skor kecocokan dari Random Forest.</p>
       <div id="recs"></div>
       <h2 style="margin-top:16px">Alasan rekomendasi</h2>
       <p class="note">Faktor dengan kontribusi terbesar (feature importance).</p>
@@ -235,17 +235,22 @@ async function jalankan() {
       <div class="rec-head"><span class="rec-name">${r.peringkat}. ${r.varietas.replaceAll("_", " ")}</span>
         <span class="rec-score">${r.skor}%</span></div>
       <div class="meter"><span style="width:${r.skor}%"></span></div>
-      <div class="meta">${r.komoditas || ""} · umur panen ${r.umur_panen_hari ?? "–"} hari · potensi ${r.potensi_hasil_ton_ha ?? "–"} t/ha · kebutuhan air ${r.kebutuhan_air ?? "–"}</div>
+      <div class="meta">${r.komoditas || ""} · umur panen ${r.umur_panen_hari ?? "–"} hari · potensi ${r.potensi_hasil_ton_ha ?? "–"} t/ha · kebutuhan air ${r.kebutuhan_air ?? "–"}${r.estimasi_hasil_ton_ha != null ? ` · <b>perkiraan hasil ${r.estimasi_hasil_ton_ha} t/ha</b>` : ""}</div>
     </div>`).join("");
+  $("m2note").textContent = d.model2.startsWith("RF kecocokan")
+    ? "Skor kecocokan 0–100: Random Forest menilai ke-25 varietas lalu mengambil 3 tertinggi. Perkiraan hasil = potensi hasil × skor."
+    : "Skor kecocokan = probabilitas kelas dari Random Forest.";
 
   $("why").innerHTML = d.alasan.map(a => `
     <li><b>${NAMA_VAR[a.faktor] || a.faktor}</b> — ${a.nilai}
       <div class="meter"><span style="width:${Math.round(a.kontribusi * 100)}%"></span></div>
       <span class="meta">kontribusi ${Math.round(a.kontribusi * 100)}%</span></li>`).join("");
 
-  $("label").textContent = d.label_prototipe
-    ? `Label prototipe untuk periode ini: ${d.label_prototipe.replaceAll("_", " ")} — ${d.label_di_top_k ? "masuk" : "tidak masuk"} Top-3.`
-    : "Periode ke depan: belum ada data aktual untuk dibandingkan.";
+  $("label").textContent = d.pembanding_dummy
+    ? `Top-3 menurut skor dummy "sebenarnya" periode ini: ${d.pembanding_dummy.join(", ")}.`
+    : d.label_prototipe
+      ? `Label prototipe untuk periode ini: ${d.label_prototipe.replaceAll("_", " ")} — ${d.label_di_top_k ? "masuk" : "tidak masuk"} Top-3.`
+      : "Periode ke depan: belum ada data aktual untuk dibandingkan.";
 }
 
 async function init() {
@@ -256,9 +261,11 @@ async function init() {
   $("periode").onchange = jalankan;
   $("btn").onclick = jalankan;
   $("reset").onclick = () => { isiTanah(); jalankan(); };
-  const m = META.metrics;
-  $("footer").textContent = `Model run ${META.run_id} (dilatih ${META.created_at}) · test 2025: ` +
-    `Accuracy ${m.accuracy} · F1 ${m.f1_weighted} · Top-3 ${m.top_3_accuracy}`;
+  const m2 = META.model2, mt = m2.metrik_test;
+  $("footer").textContent = `Model 1 LSTM: run ${META.run_id} (${META.lokasi.length} lokasi, dilatih ${META.created_at}) · ` +
+    `Model 2: ${m2.nama}` + (mt ? ` · test 2025 (tanpa bulan hujan ekstrem): MAE skor ${mt.MAE_normal.toFixed(1)}, ` +
+    `Spearman ${mt.spearman_rata2_normal.toFixed(2)}, komoditas tepat ${(mt.komoditas_top1_tepat_normal * 100).toFixed(0)}%` :
+    ` · Accuracy ${META.metrics.accuracy} · Top-3 ${META.metrics.top_3_accuracy}`);
   jalankan();
 }
 init();

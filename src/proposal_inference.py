@@ -8,6 +8,7 @@ dan daftar kelas. Preprocessing di sini identik dengan `src/proposal_pipeline.py
 from __future__ import annotations
 
 import os
+import warnings
 from datetime import datetime
 from typing import Any
 
@@ -18,10 +19,12 @@ import torch
 
 from src.dataset_loader import beri_label_varietas_prototipe, filter_active_locations, load_config
 from src.lstm_encoder import TemporalLSTMEncoder
-from src.preprocessing import encode_static_categories
+from src.preprocessing import CATEGORICAL_MAPPINGS, encode_static_categories
 from src.proposal_pipeline import _interpolate_per_location
 
 BUNDLE_PATH = "models/proposal_bundle.joblib"
+RF_VARIETAS_PATH = "models/rf_varietas_hybrid.joblib"
+KEBUTUHAN_AIR_KODE = {"Sedikit": 0, "Sedang": 1, "Banyak": 2}
 NAMA_BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus",
               "September", "Oktober", "November", "Desember"]
 SATUAN = {
@@ -111,6 +114,25 @@ class ProposalRecommender:
         self.rf = b["rf"]
         self.importance = {g["kelompok"]: g["importance_total"] for g in b["group_importance"]}
 
+        # Model 2 versi many-to-many (RF kecocokan 25 varietas), dipakai bila tersedia & cocok dengan encoder LSTM
+        self.rf_var = None
+        if os.path.exists(RF_VARIETAS_PATH):
+            pv = joblib.load(RF_VARIETAS_PATH)
+            if pv.get("encoder_lstm", {}).get("run_id") == b["run_id"]:
+                from buat_data_dummy_varietas import muat_varietas
+
+                self.rf_var = pv
+                self.var_tabel = muat_varietas(raw_dir).reset_index(drop=True)
+                dummy_path = os.path.join(raw_dir, "dummy_varietas", "kecocokan_varietas_semua.csv")
+                self.var_dummy = pd.read_csv(dummy_path) if os.path.exists(dummy_path) else None
+            else:
+                warnings.warn(
+                    f"{RF_VARIETAS_PATH} dibuat dari encoder LSTM lain "
+                    f"({pv.get('encoder_lstm', {}).get('run_id')} ≠ {b['run_id']}); Model 2 memakai RF klasifikasi lama. "
+                    "Jalankan ulang buat_data_rf_varietas.py dan train_rf_varietas.py.",
+                    stacklevel=2,
+                )
+
     # ------------------------------------------------------------------ metadata
     def meta(self) -> dict[str, Any]:
         b = self.b
@@ -134,6 +156,9 @@ class ProposalRecommender:
             "run_id": b["run_id"],
             "metrics": b["metrics"],
             "created_at": b["created_at"],
+            "model2": ({"nama": "RF kecocokan varietas (25 varietas)", "run_id": self.rf_var["run_id"],
+                        "metrik_test": self.rf_var["metrik_test"]} if self.rf_var is not None
+                       else {"nama": "RF klasifikasi (12 label prototipe)", "run_id": b["run_id"], "metrik_test": None}),
             "opsi": {"tekstur_tanah": ["Pasir", "Lanau", "Lempung"], "drainase": ["Baik", "Rusak"],
                      "risiko_bencana_hama": ["Rendah", "Sedang", "Tinggi"]},
         }
@@ -227,7 +252,7 @@ class ProposalRecommender:
             alasan.append({"faktor": col, "nilai": f"{soil[col]} {sat}".strip(), "kontribusi": round(imp, 3)})
 
         bulan_mulai = (periode - b["seq_len"]) % 12
-        return {
+        hasil = {
             "lokasi": {"id": loc_id, "nama": self.soil.loc[loc_id, "nama_lokasi"]},
             "target": f"{NAMA_BULAN[int(bulan) - 1]} {int(tahun)}",
             "jendela_input": f"{NAMA_BULAN[bulan_mulai]} {(periode - b['seq_len']) // 12} – "
@@ -248,4 +273,72 @@ class ProposalRecommender:
             "label_di_top_k": (label in [names[j] for j in order]) if label else None,
             "alasan": alasan,
             "tanah_dipakai": soil,
+            "model2": "RF klasifikasi (12 label prototipe)",
+        }
+        if self.rf_var is not None:
+            hasil.update(self._rekomendasi_varietas(loc_id, int(tahun), int(bulan), emb[0], soil, forecast, top_k))
+        return hasil
+
+    def _rekomendasi_varietas(self, loc_id: str, tahun: int, bulan: int, emb: np.ndarray, soil: dict[str, Any],
+                              forecast: np.ndarray, top_k: int) -> dict[str, Any]:
+        """Model 2 many-to-many: nilai kecocokan ke-25 varietas (fitur sama dengan buat_data_rf_varietas.py)."""
+        v = self.var_tabel
+        X = pd.DataFrame(np.repeat(emb[None], len(v), axis=0), columns=[f"lstm_{i}" for i in range(len(emb))])
+        for col in self.b["static_cols"]:
+            val = soil[col]
+            if col in CATEGORICAL_MAPPINGS and isinstance(val, str):
+                val = CATEGORICAL_MAPPINGS[col].get(val, 0.0)
+            X[col] = float(val)
+        X["umur_panen_hari_num"] = v["umur_panen_hari_num"].to_numpy()
+        X["potensi_hasil_num"] = v["potensi_hasil_num"].to_numpy()
+        X["ketahanan_hama_skala"] = v["ketahanan_hama_skala"].to_numpy()
+        X["kebutuhan_air_kode"] = v["kebutuhan_air"].map(KEBUTUHAN_AIR_KODE).to_numpy()
+        X["ketinggian_maks_mdpl"] = v["ketinggian_maks_mdpl"].to_numpy()
+        for k in ("padi", "jagung", "kedelai"):
+            X[f"komoditas_{k}"] = (v["komoditas"].str.lower() == k).astype(int).to_numpy()
+        X["bulan_tanam_sin"] = round(float(np.sin(2 * np.pi * bulan / 12.0)), 6)
+        X["bulan_tanam_cos"] = round(float(np.cos(2 * np.pi * bulan / 12.0)), 6)
+
+        skor = self.rf_var["model"].predict(X[self.rf_var["fitur"]])
+        order = np.argsort(-skor, kind="stable")[:top_k]  # skor seri -> urut id varietas
+        rek = []
+        for i, j in enumerate(order):
+            r = v.iloc[j]
+            rek.append({
+                "peringkat": i + 1, "varietas": f"{r['komoditas']} {r['nama_varietas']}", "skor": round(float(skor[j]), 1),
+                "komoditas": r["komoditas"], "nama_varietas": r["nama_varietas"],
+                "umur_panen_hari": r["umur_panen_hari"], "potensi_hasil_ton_ha": r["potensi_hasil_ton_ha"],
+                "kebutuhan_air": r["kebutuhan_air"], "ketahanan_hama_skala": int(r["ketahanan_hama_skala"]),
+                "ketinggian_optimal_mdpl": r["ketinggian_optimal_mdpl"],
+                "estimasi_hasil_ton_ha": round(float(r["potensi_hasil_num"]) * float(skor[j]) / 100.0, 2),
+            })
+
+        imp = self.rf_var["importance_kelompok"]
+        top = v.iloc[order[0]]
+        alasan = [
+            {"faktor": "Pola iklim 12 bulan terakhir (Model 1 LSTM)",
+             "nilai": f"prakiraan hujan {forecast[0]:.0f} mm, suhu {forecast[1]:.1f} °C", "kontribusi": round(imp["LSTM (32)"], 3)},
+            {"faktor": "Karakteristik varietas",
+             "nilai": f"{top['nama_varietas']}: kebutuhan air {top['kebutuhan_air']}, umur {top['umur_panen_hari']} hari",
+             "kontribusi": round(imp["Varietas (8)"], 3)},
+            {"faktor": "Musim tanam", "nilai": NAMA_BULAN[bulan - 1], "kontribusi": round(imp["Musim (2)"], 3)},
+            {"faktor": "Kondisi tanah", "nilai": f"pH {soil['ph_tanah']}, drainase {soil['drainase']}, "
+                                                 f"{soil['ketinggian_tempat']} mdpl", "kontribusi": round(imp["Tanah (9)"], 3)},
+        ]
+
+        pembanding = None
+        if self.var_dummy is not None:
+            g = self.var_dummy[(self.var_dummy["id_lokasi"] == loc_id) & (self.var_dummy["tahun"] == tahun)
+                               & (self.var_dummy["bulan"] == bulan)]
+            if len(g):
+                g = g.sort_values("skor_kecocokan", ascending=False).head(top_k)
+                pembanding = [f"{r.komoditas} {r.nama_varietas} ({r.skor_kecocokan:.1f})" for r in g.itertuples()]
+
+        return {
+            "rekomendasi": rek,
+            "alasan": alasan,
+            "label_prototipe": None,
+            "label_di_top_k": None,
+            "pembanding_dummy": pembanding,
+            "model2": "RF kecocokan varietas (menilai 25 varietas)",
         }
