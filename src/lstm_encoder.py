@@ -189,6 +189,71 @@ def train_forecast_encoder(
     return model
 
 
+def train_lstm_classifier(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_val: np.ndarray,
+    y_val: np.ndarray,
+    num_classes: int,
+    hidden_1: int = 128,
+    hidden_2: int = 64,
+    embedding_dim: int = 32,
+    dropout: float = 0.2,
+    max_epochs: int = 300,
+    patience: int = 20,
+    batch_size: int = 16,
+    learning_rate: float = 1e-3,
+    seed: int = 42,
+) -> TemporalLSTMEncoder:
+    """Baseline single model 'LSTM saja': sekuens iklim -> softmax varietas (early stopping di validasi)."""
+    torch.manual_seed(seed)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = TemporalLSTMEncoder(
+        input_dim=X_train.shape[-1], num_classes=num_classes, hidden_1=hidden_1,
+        hidden_2=hidden_2, embedding_dim=embedding_dim, dropout=dropout,
+    ).to(device)
+    gen = torch.Generator().manual_seed(seed)
+    loader = DataLoader(
+        TensorDataset(torch.tensor(X_train, dtype=torch.float32), torch.tensor(y_train, dtype=torch.long)),
+        batch_size=batch_size, shuffle=True, generator=gen,
+    )
+    x_val_t = torch.tensor(X_val, dtype=torch.float32).to(device)
+    y_val_t = torch.tensor(y_val, dtype=torch.long).to(device)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+    best_val, best_state, wait = float("inf"), None, 0
+    for _ in range(max_epochs):
+        model.train()
+        for bx, by in loader:
+            bx, by = bx.to(device), by.to(device)
+            optimizer.zero_grad()
+            criterion(model(bx), by).backward()
+            optimizer.step()
+        model.eval()
+        with torch.no_grad():
+            val_loss = float(criterion(model(x_val_t), y_val_t).item())
+        if val_loss < best_val - 1e-6:
+            best_val, wait = val_loss, 0
+            best_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
+        else:
+            wait += 1
+            if wait >= patience:
+                break
+    if best_state is not None:
+        model.load_state_dict(best_state)
+    model.eval()
+    return model
+
+
+@torch.no_grad()
+def predict_proba_lstm(model: TemporalLSTMEncoder, X_seq: np.ndarray) -> np.ndarray:
+    device = next(model.parameters()).device
+    model.eval()
+    logits = model(torch.tensor(X_seq, dtype=torch.float32).to(device))
+    return torch.softmax(logits, dim=1).cpu().numpy()
+
+
 @torch.no_grad()
 def predict_forecast(model: TemporalLSTMEncoder, X_seq: np.ndarray) -> np.ndarray:
     """Prediksi iklim bulan berikutnya (skala ter-normalisasi) dari encoder peramal."""

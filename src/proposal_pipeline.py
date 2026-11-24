@@ -94,7 +94,7 @@ def prepare_proposal_dataset(cfg: dict[str, Any]) -> dict[str, Any]:
     y = label_encoder.transform(labels)
 
     train_mask = years <= train_end
-    val_mask = years == val_year
+    val_mask = (years > train_end) & (years <= val_year)
     test_mask = years == test_year
 
     stat_scaler = StandardScaler().fit(X_stat[train_mask])
@@ -112,6 +112,7 @@ def prepare_proposal_dataset(cfg: dict[str, Any]) -> dict[str, Any]:
         "val_mask": val_mask,
         "test_mask": test_mask,
         "label_encoder": label_encoder,
+        "soil_raw": soil.set_index("id_lokasi").to_dict("index"),
         "climate_cols": climate_cols,
         "input_cols": input_cols,
         "static_cols": static_cols,
