@@ -25,44 +25,6 @@ from src.dataset_loader import beri_label_varietas_prototipe, filter_active_loca
 from src.preprocessing import encode_static_categories
 
 
-DAILY_FEATURE_COLS = [
-    "hari_hujan",            # jumlah hari hujan >= 1 mm
-    "hari_hujan_lebat",      # jumlah hari hujan >= 50 mm
-    "hujan_harian_maks",     # curah hujan harian tertinggi (mm)
-    "kering_beruntun_maks",  # deret hari kering (< 1 mm) terpanjang dalam bulan
-    "hari_panas",            # jumlah hari suhu maksimal >= persentil 90 data train
-]
-
-
-def _longest_run(mask: np.ndarray) -> int:
-    best = cur = 0
-    for v in mask:
-        cur = cur + 1 if v else 0
-        best = max(best, cur)
-    return best
-
-
-def daily_monthly_features(daily: pd.DataFrame, hot_threshold: float) -> pd.DataFrame:
-    """Ringkas data harian menjadi fitur turunan bulanan (feature engineering, Bag. 3.10 proposal)."""
-    d = daily.sort_values(["id_lokasi", "tanggal"])
-    rows = []
-    for (loc, th, bl), g in d.groupby(["id_lokasi", "tahun", "bulan"], sort=True):
-        rain = g["curah_hujan"].to_numpy(dtype=float)
-        rows.append({
-            "id_lokasi": loc, "tahun": th, "bulan": bl,
-            "hari_hujan": int((rain >= 1.0).sum()),
-            "hari_hujan_lebat": int((rain >= 50.0).sum()),
-            "hujan_harian_maks": float(rain.max()),
-            "kering_beruntun_maks": _longest_run(rain < 1.0),
-            "hari_panas": int((g["suhu_maksimal"].to_numpy(dtype=float) >= hot_threshold).sum()),
-        })
-    return pd.DataFrame(rows)
-
-
-def hot_day_threshold(daily: pd.DataFrame, train_end: int) -> float:
-    return float(daily.loc[daily["tahun"] <= train_end, "suhu_maksimal"].quantile(0.9))
-
-
 def _interpolate_per_location(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
     out = df.sort_values(["id_lokasi", "tahun", "bulan"]).reset_index(drop=True)
     out[cols] = out.groupby("id_lokasi")[cols].transform(lambda s: s.interpolate(method="linear").bfill().ffill())
@@ -102,21 +64,6 @@ def prepare_proposal_dataset(cfg: dict[str, Any]) -> dict[str, Any]:
 
     # 4) Feature engineering: indeks musim (sin/cos bulan)
     input_cols = list(climate_cols)
-    daily_info = None
-    if pcfg.get("daily_features", False):
-        # Fitur turunan dari data HARIAN, diringkas per bulan (resolusi tetap bulanan seperti Tabel 3.1).
-        # Tidak di-cap IQR (banyak bernilai 0, IQR bisa 0), hanya Z-Score dari data train.
-        daily = pd.read_csv(os.path.join(raw_dir, "aceh_utara_agroklimat_harian.csv"))
-        daily = daily[daily["id_lokasi"].isin(climate["id_lokasi"].unique())]
-        thr = hot_day_threshold(daily, train_end)
-        feats = daily_monthly_features(daily, thr)
-        merged = climate[["id_lokasi", "tahun", "bulan"]].merge(feats, on=["id_lokasi", "tahun", "bulan"], how="left")
-        dvals = merged[DAILY_FEATURE_COLS].fillna(0.0)
-        dvals.index = climate.index
-        daily_scaler = StandardScaler().fit(dvals.loc[fit_rows])
-        scaled[DAILY_FEATURE_COLS] = daily_scaler.transform(dvals)
-        input_cols += DAILY_FEATURE_COLS
-        daily_info = {"hot_threshold": thr, "mean": daily_scaler.mean_.tolist(), "std": daily_scaler.scale_.tolist()}
     if pcfg.get("seasonal_features", True):
         scaled["bulan_sin"] = np.sin(2 * np.pi * climate["bulan"] / 12.0)
         scaled["bulan_cos"] = np.cos(2 * np.pi * climate["bulan"] / 12.0)
@@ -170,7 +117,6 @@ def prepare_proposal_dataset(cfg: dict[str, Any]) -> dict[str, Any]:
         "iqr_lower": lower,
         "iqr_upper": upper,
         "clim_scaler": clim_scaler,
-        "daily_info": daily_info,
         "stat_scaler": stat_scaler,
         "climate_cols": climate_cols,
         "input_cols": input_cols,

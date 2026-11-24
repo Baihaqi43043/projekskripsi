@@ -231,8 +231,7 @@ Jumlah kelas varietas: {len(le.classes_)}.
 
 Missing value diinterpolasi linier per lokasi. Outlier ditangani dengan metode IQR (pagar Q1 − 1,5·IQR dan
 Q3 + 1,5·IQR) lalu dinormalisasi Z-Score; seluruh statistik dihitung **hanya dari data periode training**.
-Jumlah nilai yang dibatasi (capping): **{pp['n_outliers_capped']}**.
-Input LSTM per bulan ({len(pp['input_cols'])} fitur): {', '.join(pp['input_cols'])}.
+Jumlah nilai yang dibatasi (capping): **{pp['n_outliers_capped']}**. Fitur turunan indeks musim: sin/cos bulan.
 
 **Tabel 4.2 Parameter preprocessing iklim bulanan**
 
