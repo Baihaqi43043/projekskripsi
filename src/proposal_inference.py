@@ -19,7 +19,7 @@ import torch
 from src.dataset_loader import beri_label_varietas_prototipe, filter_active_locations, load_config
 from src.lstm_encoder import TemporalLSTMEncoder
 from src.preprocessing import encode_static_categories
-from src.proposal_pipeline import _interpolate_per_location
+from src.proposal_pipeline import DAILY_FEATURE_COLS, _interpolate_per_location, daily_monthly_features
 
 BUNDLE_PATH = "models/proposal_bundle.joblib"
 NAMA_BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus",
@@ -64,6 +64,7 @@ def save_bundle(path: str, data: dict[str, Any], lstm: TemporalLSTMEncoder, rf, 
         "stat_mean": data["stat_scaler"].mean_.astype(float),
         "stat_scale": data["stat_scaler"].scale_.astype(float),
         "active_locations": list(data["preprocessing"]["locations"]),
+        "daily_info": data.get("daily_info"),
         "group_importance": group_df.to_dict("records"),
         "run_id": run_id,
         "metrics": metrics,
@@ -96,6 +97,12 @@ class ProposalRecommender:
         climate = _interpolate_per_location(climate, b["climate_cols"])
         climate["varietas"] = beri_label_varietas_prototipe(climate, soil)["varietas"].to_numpy()
         climate["periode"] = climate["tahun"] * 12 + climate["bulan"] - 1
+        if b.get("daily_info"):
+            daily = pd.read_csv(os.path.join(raw_dir, "aceh_utara_agroklimat_harian.csv"))
+            daily = daily[daily["id_lokasi"].isin(b["active_locations"])]
+            feats = daily_monthly_features(daily, b["daily_info"]["hot_threshold"])
+            climate = climate.merge(feats, on=["id_lokasi", "tahun", "bulan"], how="left")
+            climate[DAILY_FEATURE_COLS] = climate[DAILY_FEATURE_COLS].fillna(0.0)
         self.climate = climate
         self.soil = soil.set_index("id_lokasi")
 
@@ -162,6 +169,9 @@ class ProposalRecommender:
         vals = np.clip(vals, b["iqr_lower"], b["iqr_upper"])
         scaled = (vals - b["clim_mean"]) / b["clim_std"]
         feats = [scaled]
+        if b.get("daily_info"):
+            dv = win[DAILY_FEATURE_COLS].to_numpy(dtype=float)
+            feats.append((dv - np.asarray(b["daily_info"]["mean"])) / np.asarray(b["daily_info"]["std"]))
         if "bulan_sin" in b["input_cols"]:
             m = win["bulan"].to_numpy(dtype=float)
             feats += [np.sin(2 * np.pi * m / 12.0)[:, None], np.cos(2 * np.pi * m / 12.0)[:, None]]

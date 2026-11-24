@@ -172,6 +172,9 @@ proposal:
   # Preprocessing (Bagian 3.10): penanganan outlier IQR (pagar Q1-k*IQR, Q3+k*IQR) + Z-Score
   iqr_factor: 1.5
   seasonal_features: true      # fitur turunan indeks musim (sin/cos bulan)
+  # Fitur turunan dari data HARIAN per bulan (hari hujan, hari hujan lebat, hujan harian maks,
+  # kering beruntun terpanjang, hari panas) sebagai input tambahan LSTM. Resolusi tetap bulanan.
+  daily_features: false
   # Encoder LSTM (arsitektur di bagian `lstm:`), dilatih meramal iklim bulan berikutnya
   max_epochs: 300
   early_stopping_patience: 20
