@@ -135,6 +135,20 @@ Output: `metrics_per_seed.csv`, `metrics_summary.csv`, `confusion_matrix.png`, `
 `classification_report.txt`, `preprocessing.json`, `lstm_loss_history_seed0.csv`; model seed pertama di
 `models/proposal_lstm_encoder.pt` & `models/proposal_hybrid_rf.pkl`.
 
+#### Aplikasi rekomendasi (versi proposal, 2 model)
+```bash
+python train_hybrid_proposal.py        # sekali saja: membuat models/proposal_bundle.joblib (~1 menit)
+python app_rekomendasi_proposal.py     # buka http://127.0.0.1:8001
+```
+Pilih **lokasi** dan **bulan tanam** (termasuk 1 bulan ke depan setelah data terakhir), lalu:
+- **Model 1 – LSTM** menampilkan prakiraan 6 variabel iklim bulan itu dari pola 12 bulan sebelumnya
+  (dibandingkan dengan nilai aktual jika periode sudah lewat) + grafik riwayat.
+- **Model 2 – Random Forest** menampilkan Top-3 varietas, skor kecocokan, info varietas, dan alasan
+  rekomendasi berbasis feature importance.
+
+Kondisi lahan bisa diubah manual di bagian "Kondisi lahan" (sesuai modul input manual proposal Bag. 3.8).
+Hasil aplikasi identik dengan `rekomendasi_top3_test2025.csv` dari pipeline (sudah diverifikasi 60/60).
+
 ### E. BiLSTM Cuaca Harian (prediksi 1 hari ke depan)
 ```bash
 python train_bilstm_weather.py              # setara notebook training_lstm_cuaca.ipynb

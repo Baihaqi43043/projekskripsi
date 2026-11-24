@@ -41,6 +41,7 @@ from src.lstm_encoder import (
     train_forecast_encoder,
     train_lstm_classifier,
 )
+from src.proposal_inference import BUNDLE_PATH, save_bundle
 from src.proposal_pipeline import prepare_proposal_dataset, temporal_cv_folds
 
 RF_PARAM_DIST = {
@@ -288,6 +289,9 @@ def main() -> None:
     os.makedirs("models", exist_ok=True)
     torch.save(first["lstm"].state_dict(), "models/proposal_lstm_encoder.pt")
     joblib.dump(hyb_rf, "models/proposal_hybrid_rf.pkl")
+    # Bundle lengkap untuk aplikasi (app_rekomendasi_proposal.py): model seed pertama + preprocessing
+    save_bundle(BUNDLE_PATH, data, first["lstm"], hyb_rf, lcfg, group_df, run_meta["run_id"],
+                _mean_metrics(names["hybrid"]))
     export_git_changelog()
 
     print(f"\n=== HASIL TEST 2025 (rata-rata ± std dari {n_seeds} seed) ===")

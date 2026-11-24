@@ -113,6 +113,11 @@ def prepare_proposal_dataset(cfg: dict[str, Any]) -> dict[str, Any]:
         "test_mask": test_mask,
         "label_encoder": label_encoder,
         "soil_raw": soil.set_index("id_lokasi").to_dict("index"),
+        # objek preprocessing (dipakai untuk menyimpan bundle inference aplikasi)
+        "iqr_lower": lower,
+        "iqr_upper": upper,
+        "clim_scaler": clim_scaler,
+        "stat_scaler": stat_scaler,
         "climate_cols": climate_cols,
         "input_cols": input_cols,
         "static_cols": static_cols,
