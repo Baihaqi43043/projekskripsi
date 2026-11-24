@@ -101,9 +101,10 @@ def metrik_peringkat(df: pd.DataFrame, pred: np.ndarray, k: int = 3) -> dict:
     }
 
 
-def main() -> None:
+def main(data_dir: str = DATA_DIR, label: str = "") -> None:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
+    DATA_DIR = data_dir  # noqa: N806 - folder data bisa diganti lewat argumen
     cfg = load_config()
     info = json.load(open(os.path.join(DATA_DIR, "daftar_fitur.json"), encoding="utf-8"))
     tr = pd.read_csv(os.path.join(DATA_DIR, "rf_varietas_train.csv"))
@@ -182,7 +183,7 @@ def main() -> None:
     hyb = "Hybrid (LSTM + tanah + varietas)"
     sub = df[df["model"] == hyb]
     run_dir = log_experiment(
-        stage="RF_Varietas_Hybrid", train_samples=len(tr), test_samples=len(te),
+        stage=f"RF_Varietas_Hybrid{'_' + label if label else ''}", train_samples=len(tr), test_samples=len(te),
         num_classes=int(te["nama_varietas"].nunique()),
         hyperparameters={"target": TARGET, "param_dist": PARAM_DIST, "n_iter": N_ITER, "seeds": SEEDS,
                          "encoder_lstm": info["encoder_lstm"]},
@@ -209,7 +210,8 @@ def main() -> None:
     pd.DataFrame(rek).to_csv(os.path.join(run_dir, "rekomendasi_top3_test2025.csv"), index=False)
 
     os.makedirs("models", exist_ok=True)
-    joblib.dump({"model": model, "fitur": konfigurasi[hyb], "target": TARGET}, "models/rf_varietas_hybrid.joblib")
+    joblib.dump({"model": model, "fitur": konfigurasi[hyb], "target": TARGET},
+                f"models/rf_varietas_hybrid{'_' + label.lower() if label else ''}.joblib")
     export_git_changelog()
 
     print(f"\n=== HASIL TEST 2025 (rata-rata ± std, {len(SEEDS)} seed) ===")
@@ -220,4 +222,10 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    ap = argparse.ArgumentParser(description="Training RF many-to-many varietas.")
+    ap.add_argument("--data-dir", default=DATA_DIR, help="folder hasil buat_data_rf_varietas.py")
+    ap.add_argument("--label", default="", help="akhiran nama stage di log, mis. Harian")
+    a = ap.parse_args()
+    main(a.data_dir, a.label)

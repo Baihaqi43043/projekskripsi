@@ -60,13 +60,24 @@ def vektor_lstm(rec: ProposalRecommender, pasangan: pd.DataFrame) -> pd.DataFram
     return pd.DataFrame(rows)
 
 
-def main() -> None:
+def vektor_dari_harian(path: str, pasangan: pd.DataFrame) -> pd.DataFrame:
+    """Ambil rata-rata vektor LSTM harian pada bulan SEBELUM bulan tanam (bulan t-1)."""
+    emb = pd.read_csv(path)
+    p = pasangan.copy()
+    periode_lalu = p["tahun"] * 12 + p["bulan"] - 2
+    p["tahun_lalu"], p["bulan_lalu"] = periode_lalu // 12, periode_lalu % 12 + 1
+    out = p.merge(emb, left_on=["id_lokasi", "tahun_lalu", "bulan_lalu"], right_on=["id_lokasi", "tahun", "bulan"],
+                  how="left", suffixes=("", "_emb"))
+    return out[["id_lokasi", "tahun", "bulan"] + [c for c in emb.columns if c.startswith("lstm_")]]
+
+
+def main(lstm_harian: str | None = None, out_dir: str = OUT_DIR) -> None:
     rec = ProposalRecommender()
     data = pd.read_csv(SUMBER)
 
     # 1) Vektor LSTM: dihitung sekali per (lokasi, bulan tanam), lalu dipakai bersama oleh 25 varietas
     pasangan = data[["id_lokasi", "tahun", "bulan"]].drop_duplicates()
-    emb = vektor_lstm(rec, pasangan)
+    emb = vektor_dari_harian(lstm_harian, pasangan) if lstm_harian else vektor_lstm(rec, pasangan)
     lstm_cols = [c for c in emb.columns if c.startswith("lstm_")]
 
     # 2) Fitur tanah lengkap dari file tanah (kategori diubah ke angka; RF tidak perlu normalisasi)
@@ -89,27 +100,35 @@ def main() -> None:
     df[lstm_cols] = df[lstm_cols].round(6)
     assert not df[fitur + TARGET].isna().any().any(), "Ada nilai kosong di fitur/target"
 
-    os.makedirs(OUT_DIR, exist_ok=True)
+    os.makedirs(out_dir, exist_ok=True)
     tr, te = df[df["split"] == "train"], df[df["split"] == "test"]
-    tr.to_csv(os.path.join(OUT_DIR, "rf_varietas_train.csv"), index=False)
-    te.to_csv(os.path.join(OUT_DIR, "rf_varietas_test.csv"), index=False)
-    with open(os.path.join(OUT_DIR, "daftar_fitur.json"), "w", encoding="utf-8") as f:
+    tr.to_csv(os.path.join(out_dir, "rf_varietas_train.csv"), index=False)
+    te.to_csv(os.path.join(out_dir, "rf_varietas_test.csv"), index=False)
+    encoder = ({"sumber": "LSTM harian, rata-rata vektor bulan t-1", "file": lstm_harian} if lstm_harian else
+               {"bundle": "models/proposal_bundle.joblib", "run_id": rec.b["run_id"], "dilatih": rec.b["created_at"]})
+    with open(os.path.join(out_dir, "daftar_fitur.json"), "w", encoding="utf-8") as f:
         json.dump({
             "kunci": KUNCI, "fitur_lstm": lstm_cols, "fitur_tanah": FITUR_TANAH,
             "fitur_varietas": FITUR_VARIETAS, "fitur_musim_opsional": FITUR_MUSIM,
             "target": TARGET, "kolom_evaluasi": EVALUASI,
             "tidak_boleh_jadi_fitur": ["hujan_masa_tanam", "suhu_masa_tanam", "s_air", "s_suhu", "s_ph",
                                        "s_drainase", "s_hama", "s_ketinggian"],
-            "encoder_lstm": {"bundle": "models/proposal_bundle.joblib", "run_id": rec.b["run_id"],
-                             "dilatih": rec.b["created_at"]},
+            "encoder_lstm": encoder,
             "kode_kategori": {**{k: v for k, v in CATEGORICAL_MAPPINGS.items()}, "kebutuhan_air": KEBUTUHAN_AIR_KODE},
         }, f, indent=2, ensure_ascii=False)
 
     print(f"Fitur: {len(fitur)} = {len(lstm_cols)} LSTM + {len(FITUR_TANAH)} tanah + "
           f"{len(FITUR_VARIETAS)} varietas + {len(FITUR_MUSIM)} musim (opsional)")
     print(f"Train: {len(tr)} baris ({tr['tahun'].min()}-{tr['tahun'].max()}) | "
-          f"Test: {len(te)} baris ({te['tahun'].min()}-{te['tahun'].max()}) -> {OUT_DIR}/")
+          f"Test: {len(te)} baris ({te['tahun'].min()}-{te['tahun'].max()}) -> {out_dir}/")
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    ap = argparse.ArgumentParser(description="Buat dataset training RF many-to-many varietas.")
+    ap.add_argument("--lstm-harian", default=None,
+                    help="CSV embedding bulanan dari train_lstm_harian.py (default: encoder bulanan pipeline proposal)")
+    ap.add_argument("--out", default=OUT_DIR, help="folder output")
+    a = ap.parse_args()
+    main(a.lstm_harian, a.out)

@@ -1,6 +1,6 @@
 ================================================================================
 LOG PERUBAHAN PARAMETER & DAMPAK TERHADAP AKURASI MODEL
-Diperbarui: 2026-11-25 00:50:58
+Diperbarui: 2026-11-25 01:10:34
 ================================================================================
 MODEL TERBAIK SAAT INI : Hybrid_LSTM_RF (local) | Acc=0.425 | F1=0.4624 | Top-3=0.625
 Parameter Terbaik      : {"n_estimators": 200, "max_depth": 15, "min_samples_split": 2, "min_samples_leaf": 1, "class_weight": "balanced"}
@@ -117,12 +117,17 @@ Parameter Terbaik      : {"n_estimators": 200, "max_depth": 15, "min_samples_spl
     Perubahan Param : lstm: {'hidden_size_1': 128, 'hidden_size_2': 64, 'embedding_dim': 32, 'dropout': 0.2, 'epochs': 30, 'batch_size': 16, 'learning_rate': 0.001} -> -; proposal: {'train_end_year': 2023, 'val_year': 2024, 'test_year': 2025, 'cv_val_years': [2023, 2024], 'iqr_factor': 1.5, 'seasonal_features': True, 'max_epochs': 300, 'early_stopping_patience': 20, 'rf_search_iter': 20, 'seeds': [42, 43, 44, 45, 46]} -> -; rf_search: {'n_estimators': [100, 200, 300, 500], 'max_depth': [None, 10, 15, 20, 30], 'min_samples_split': [2, 5, 10], 'min_samples_leaf': [1, 2, 4], 'max_features': ['sqrt', 'log2', 0.5], 'class_weight': [None, 'balanced', 'balanced_subsample']} -> -; target: - -> skor_kecocokan; param_dist: - -> {'n_estimators': [100, 200, 300], 'max_depth': [None, 10, 15, 20], 'min_samples_split': [2, 5, 10], 'min_samples_leaf': [1, 2, 4], 'max_features': ['sqrt', 0.3, 0.5]}; n_iter: - -> 12; seeds: - -> [42, 43, 44, 45, 46]; encoder_lstm: - -> {'bundle': 'models/proposal_bundle.joblib', 'run_id': '20261125_004642', 'dilatih': '2026-11-25 00:46:44'}
     Hasil           : Acc=0.1042 (-0.2625), F1=None, Top-3=0.2542
     Catatan         : RF regresi skor kecocokan many-to-many; MAE=25.56±0.21, R2=-0.180, Top1=0.104, Top3=0.254
+[29] 2026-11-25 01:10:34 | RF_Varietas_Hybrid_Harian (local) | Commit: 9f95e9c
+    Perubahan Param : encoder_lstm: {'bundle': 'models/proposal_bundle.joblib', 'run_id': '20261125_004642', 'dilatih': '2026-11-25 00:46:44'} -> {'sumber': 'LSTM harian, rata-rata vektor bulan t-1', 'file': 'data/processed/lstm_harian/embedding_bulanan.csv'}
+    Hasil           : Acc=0.095 (-0.0092), F1=None, Top-3=0.225
+    Catatan         : RF regresi skor kecocokan many-to-many; MAE=25.18±0.14, R2=-0.118, Top1=0.095, Top3=0.225
 
 ================================================================================
 RIWAYAT COMMIT GIT
 ================================================================================
 Commit  | Tanggal             | Author       | Pesan Commit
 --------------------------------------------------------------------------------
+9f95e9c | 2026-11-25 00:51:27 | baihaqi43043 | training ulang 20 lokasi: LSTM proposal, data dummy many-to-many, dan RF varietas
 7183299 | 2026-11-25 00:45:09 | baihaqi43043 | pakai 20 lokasi; tambah training RF many-to-many dengan evaluasi tanpa hujan ekstrem
 e708ab2 | 2026-11-25 00:35:41 | baihaqi43043 | tambah pembuat dataset training RF dari data many-to-many varietas
 ad27e13 | 2026-11-25 00:24:38 | baihaqi43043 | tambah data dummy many-to-many lokasi x bulan tanam x varietas (tanpa if-else)
