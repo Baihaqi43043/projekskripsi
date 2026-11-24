@@ -1,0 +1,53 @@
+{
+  "iqr_lower": {
+    "curah_hujan": -89.015,
+    "suhu_rata_rata": 20.1389,
+    "suhu_maksimal": 25.0598,
+    "suhu_minimum": 16.7503,
+    "kelembaban_rata_rata": 73.0924,
+    "lama_penyinaran": 11.2877
+  },
+  "iqr_upper": {
+    "curah_hujan": 470.385,
+    "suhu_rata_rata": 31.1569,
+    "suhu_maksimal": 32.0675,
+    "suhu_minimum": 30.365,
+    "kelembaban_rata_rata": 94.6736,
+    "lama_penyinaran": 22.1365
+  },
+  "n_outliers_capped": 14,
+  "zscore_mean": {
+    "curah_hujan": 198.029,
+    "suhu_rata_rata": 25.8083,
+    "suhu_maksimal": 28.4792,
+    "suhu_minimum": 23.7306,
+    "kelembaban_rata_rata": 84.3106,
+    "lama_penyinaran": 16.78
+  },
+  "zscore_std": {
+    "curah_hujan": 101.4415,
+    "suhu_rata_rata": 1.4483,
+    "suhu_maksimal": 1.1218,
+    "suhu_minimum": 1.7408,
+    "kelembaban_rata_rata": 3.4322,
+    "lama_penyinaran": 2.0619
+  },
+  "sequence_length": 12,
+  "input_cols": [
+    "curah_hujan",
+    "suhu_rata_rata",
+    "suhu_maksimal",
+    "suhu_minimum",
+    "kelembaban_rata_rata",
+    "lama_penyinaran",
+    "bulan_sin",
+    "bulan_cos"
+  ],
+  "locations": [
+    "L001",
+    "L002",
+    "L003",
+    "L004",
+    "L005"
+  ]
+}

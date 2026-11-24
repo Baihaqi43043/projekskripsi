@@ -1,0 +1,181 @@
+project:
+  name: "Model Hybrid LSTM-Random Forest Rekomendasi Varietas Tanaman"
+  seed: 42
+
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  start_date: "20200101"
+  end_date: "20251231"
+  # Lokasi yang DIPAKAI pipeline training (data/raw tetap berisi semua 20 lokasi).
+  # Sementara 5 lokasi (sama dengan split BiLSTM di data/raw/lstm/). Hapus/kosongkan untuk memakai semua.
+  active_location_ids: ["L001", "L002", "L003", "L004", "L005"]
+  # 20 titik pengamatan (kecamatan) di Kabupaten Aceh Utara sesuai Bagian 3.7 PDF
+  locations:
+    - id: "L001"
+      name: "Lhoksukon"
+      lat: 5.0528
+      lon: 97.3117
+      ketinggian_tempat: 8.0
+    - id: "L002"
+      name: "Matangkuli"
+      lat: 5.0272
+      lon: 97.2714
+      ketinggian_tempat: 12.0
+    - id: "L003"
+      name: "Syamtalira Aron"
+      lat: 5.0911
+      lon: 97.2133
+      ketinggian_tempat: 6.0
+    - id: "L004"
+      name: "Dewantara"
+      lat: 5.2356
+      lon: 97.0086
+      ketinggian_tempat: 4.0
+    - id: "L005"
+      name: "Kuta Makmur"
+      lat: 5.1067
+      lon: 97.1056
+      ketinggian_tempat: 25.0
+    - id: "L006"
+      name: "Muara Batu"
+      lat: 5.2430
+      lon: 96.9530
+      ketinggian_tempat: 5.0
+    - id: "L007"
+      name: "Samudera"
+      lat: 5.1340
+      lon: 97.1970
+      ketinggian_tempat: 4.0
+    - id: "L008"
+      name: "Tanah Luas"
+      lat: 4.9850
+      lon: 97.2240
+      ketinggian_tempat: 18.0
+    - id: "L009"
+      name: "Nibong"
+      lat: 5.0590
+      lon: 97.2430
+      ketinggian_tempat: 10.0
+    - id: "L010"
+      name: "Syamtalira Bayu"
+      lat: 5.1090
+      lon: 97.1760
+      ketinggian_tempat: 7.0
+    - id: "L011"
+      name: "Meurah Mulia"
+      lat: 5.0480
+      lon: 97.1730
+      ketinggian_tempat: 14.0
+    - id: "L012"
+      name: "Tanah Pasir"
+      lat: 5.1180
+      lon: 97.2760
+      ketinggian_tempat: 5.0
+    - id: "L013"
+      name: "Lapang"
+      lat: 5.1350
+      lon: 97.2910
+      ketinggian_tempat: 3.0
+    - id: "L014"
+      name: "Baktiya"
+      lat: 5.0830
+      lon: 97.3920
+      ketinggian_tempat: 9.0
+    - id: "L015"
+      name: "Baktiya Barat"
+      lat: 5.0880
+      lon: 97.3450
+      ketinggian_tempat: 7.0
+    - id: "L016"
+      name: "Seunuddon"
+      lat: 5.1580
+      lon: 97.4380
+      ketinggian_tempat: 3.0
+    - id: "L017"
+      name: "Tanah Jambo Aye"
+      lat: 5.1260
+      lon: 97.4650
+      ketinggian_tempat: 6.0
+    - id: "L018"
+      name: "Langkahan"
+      lat: 4.9350
+      lon: 97.4150
+      ketinggian_tempat: 45.0
+    - id: "L019"
+      name: "Cot Girek"
+      lat: 4.9210
+      lon: 97.3210
+      ketinggian_tempat: 55.0
+    - id: "L020"
+      name: "Sawang"
+      lat: 5.1320
+      lon: 96.9250
+      ketinggian_tempat: 85.0
+
+  # Tabel 3.1 PDF: Data Agroklimat (Time-Series)
+  climate_features:
+    - "curah_hujan"
+    - "suhu_rata_rata"
+    - "suhu_maksimal"
+    - "suhu_minimum"
+    - "kelembaban_rata_rata"
+    # PERHATIAN SATUAN: dari NASA POWER ALLSKY_SFC_SW_DWN = radiasi matahari (MJ/m2/hari),
+    # BUKAN lama penyinaran (jam/hari) seperti Tabel 3.1 proposal. Ganti bila data BMKG tersedia.
+    - "lama_penyinaran"
+
+  # Tabel 3.2 PDF: Data Kondisi Tanah dan Lingkungan (Statis)
+  static_features:
+    - "tekstur_tanah"
+    - "ph_tanah"
+    - "nitrogen"
+    - "fosfor"
+    - "kalium"
+    - "karbon_organik"
+    - "drainase"
+    - "ketinggian_tempat"
+    - "risiko_bencana_hama"
+
+  sequence_length: 12     # Sliding window 12 bulan (bisa diubah ke 24/60)
+  train_ratio: 0.8
+
+lstm:
+  hidden_size_1: 128
+  hidden_size_2: 64
+  embedding_dim: 32
+  dropout: 0.2
+  epochs: 30
+  batch_size: 16
+  learning_rate: 0.001
+
+random_forest:
+  n_estimators: 200
+  max_depth: 15
+  min_samples_split: 2
+  min_samples_leaf: 1
+  class_weight: "balanced"
+
+recommendation:
+  top_k: 3
+
+# ------------------------------------------------------------------------------------------
+# Pipeline Hybrid sesuai proposal (train_hybrid_proposal.py)
+# ------------------------------------------------------------------------------------------
+proposal:
+  # Split kronologis berdasarkan TAHUN BULAN TARGET (Bagian 3.7 & 3.11 proposal):
+  #   train <= train_end_year | validasi = val_year | test = test_year (hanya dipakai sekali)
+  train_end_year: 2023
+  val_year: 2024
+  test_year: 2025
+  # Fold cross-validation Random Forest (expanding window): latih < tahun, validasi = tahun
+  cv_val_years: [2023, 2024]
+  # Preprocessing (Bagian 3.10): penanganan outlier IQR (pagar Q1-k*IQR, Q3+k*IQR) + Z-Score
+  iqr_factor: 1.5
+  seasonal_features: true      # fitur turunan indeks musim (sin/cos bulan)
+  # Encoder LSTM (arsitektur di bagian `lstm:`), dilatih meramal iklim bulan berikutnya
+  max_epochs: 300
+  early_stopping_patience: 20
+  # Random Forest tuning (Bagian 3.11 Tahap 5)
+  rf_search_iter: 20
+  # Ulangi eksperimen dengan beberapa seed -> laporkan rata-rata +- std
+  seeds: [42, 43, 44, 45, 46]

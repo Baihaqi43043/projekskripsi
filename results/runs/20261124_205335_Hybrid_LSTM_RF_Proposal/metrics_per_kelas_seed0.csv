@@ -1,0 +1,12 @@
+varietas,support_test,Hybrid_precision,Hybrid_recall,Hybrid_f1,RF_f1,LSTM_f1
+Jagung_BISI_18,12,0.625,0.417,0.5,0.0,0.75
+Jagung_Bima_20_URI,0,0.0,0.0,0.0,0.0,0.0
+Jagung_Lamuru,3,0.0,0.0,0.0,0.308,0.0
+Jagung_NK_212,6,0.333,0.167,0.222,0.0,0.667
+Kedelai_Anjasmoro,9,0.5,0.222,0.308,0.182,0.353
+Padi_Ciherang,12,0.556,0.417,0.476,0.0,0.5
+Padi_IR64,6,0.0,0.0,0.0,0.471,0.0
+Padi_Inpari_32,6,0.714,0.833,0.769,0.667,0.167
+Padi_Inpari_33,3,0.5,0.667,0.571,0.462,0.0
+Padi_Inpari_42,0,0.0,0.0,0.0,0.0,0.0
+Padi_Mekongga,3,0.0,0.0,0.0,0.4,0.0

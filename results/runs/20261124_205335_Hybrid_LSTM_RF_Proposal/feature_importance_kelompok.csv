@@ -1,0 +1,11 @@
+kelompok,jumlah_fitur,importance_total,importance_per_fitur
+Fitur temporal LSTM (32 dimensi),32,0.7519,0.0235
+ketinggian_tempat,1,0.0489,0.0489
+risiko_bencana_hama,1,0.0411,0.0411
+nitrogen,1,0.0404,0.0404
+ph_tanah,1,0.0393,0.0393
+fosfor,1,0.0364,0.0364
+karbon_organik,1,0.0362,0.0362
+tekstur_tanah,1,0.0033,0.0033
+kalium,1,0.0027,0.0027
+drainase,1,0.0,0.0

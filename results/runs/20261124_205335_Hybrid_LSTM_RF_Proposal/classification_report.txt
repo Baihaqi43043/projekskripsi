@@ -1,0 +1,17 @@
+                    precision    recall  f1-score   support
+
+    Jagung_BISI_18       0.62      0.42      0.50        12
+Jagung_Bima_20_URI       0.00      0.00      0.00         0
+     Jagung_Lamuru       0.00      0.00      0.00         3
+     Jagung_NK_212       0.33      0.17      0.22         6
+ Kedelai_Anjasmoro       0.50      0.22      0.31         9
+     Padi_Ciherang       0.56      0.42      0.48        12
+         Padi_IR64       0.00      0.00      0.00         6
+    Padi_Inpari_32       0.71      0.83      0.77         6
+    Padi_Inpari_33       0.50      0.67      0.57         3
+    Padi_Inpari_42       0.00      0.00      0.00         0
+     Padi_Mekongga       0.00      0.00      0.00         3
+
+          accuracy                           0.33        60
+         macro avg       0.29      0.25      0.26        60
+      weighted avg       0.44      0.33      0.37        60
