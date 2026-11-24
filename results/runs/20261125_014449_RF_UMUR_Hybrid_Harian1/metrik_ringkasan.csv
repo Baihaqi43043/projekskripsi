@@ -1,0 +1,5 @@
+model,MAE_mean,MAE_std,RMSE_mean,RMSE_std,R2_mean,R2_std,MAE_normal_mean,MAE_normal_std,R2_normal_mean,R2_normal_std
+Tebakan tanpa model,4.072,,5.484,,0.854,,3.417,,0.89,
+Hybrid (LSTM + tanah + varietas),1.774,0.012,2.218,0.014,0.976,0.0,1.715,0.008,0.977,0.0
+RF saja (rata-rata iklim + tanah + varietas),2.074,0.017,2.609,0.021,0.967,0.001,1.94,0.013,0.97,0.0
+Tanpa iklim (tanah + varietas),1.735,0.023,2.166,0.03,0.977,0.001,1.729,0.024,0.977,0.001

@@ -24,6 +24,8 @@ from src.proposal_pipeline import _interpolate_per_location
 
 BUNDLE_PATH = "models/proposal_bundle.joblib"
 RF_VARIETAS_PATH = "models/rf_varietas_hybrid.joblib"
+RF_HASIL_PATH = "models/rf_hasil_hybrid.joblib"
+RF_UMUR_PATH = "models/rf_umur_hybrid.joblib"
 KEBUTUHAN_AIR_KODE = {"Sedikit": 0, "Sedang": 1, "Banyak": 2}
 NAMA_BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus",
               "September", "Oktober", "November", "Desember"]
@@ -123,6 +125,13 @@ class ProposalRecommender:
 
                 self.rf_var = pv
                 self.var_tabel = muat_varietas(raw_dir).reset_index(drop=True)
+                # Model prediksi hasil panen & umur panen aktual (opsional, encoder harus sama)
+                self.rf_tambahan = {}
+                for kunci, path in (("hasil", RF_HASIL_PATH), ("umur", RF_UMUR_PATH)):
+                    if os.path.exists(path):
+                        m = joblib.load(path)
+                        if m.get("encoder_lstm", {}).get("run_id") == b["run_id"]:
+                            self.rf_tambahan[kunci] = m
                 dummy_path = os.path.join(raw_dir, "dummy_varietas", "kecocokan_varietas_semua.csv")
                 self.var_dummy = pd.read_csv(dummy_path) if os.path.exists(dummy_path) else None
             else:
@@ -157,7 +166,9 @@ class ProposalRecommender:
             "metrics": b["metrics"],
             "created_at": b["created_at"],
             "model2": ({"nama": "RF kecocokan varietas (25 varietas)", "run_id": self.rf_var["run_id"],
-                        "metrik_test": self.rf_var["metrik_test"]} if self.rf_var is not None
+                        "metrik_test": self.rf_var["metrik_test"],
+                        "tambahan": {k: {"run_id": m["run_id"], "satuan": m["satuan"], "metrik_test": m["metrik_test"]}
+                                     for k, m in self.rf_tambahan.items()}} if self.rf_var is not None
                        else {"nama": "RF klasifikasi (12 label prototipe)", "run_id": b["run_id"], "metrik_test": None}),
             "opsi": {"tekstur_tanah": ["Pasir", "Lanau", "Lempung"], "drainase": ["Baik", "Rusak"],
                      "risiko_bencana_hama": ["Rendah", "Sedang", "Tinggi"]},
@@ -301,6 +312,10 @@ class ProposalRecommender:
 
         skor = self.rf_var["model"].predict(X[self.rf_var["fitur"]])
         order = np.argsort(-skor, kind="stable")[:top_k]  # skor seri -> urut id varietas
+        pred_hasil = self.rf_tambahan["hasil"]["model"].predict(X[self.rf_tambahan["hasil"]["fitur"]]) \
+            if "hasil" in self.rf_tambahan else None
+        pred_umur = self.rf_tambahan["umur"]["model"].predict(X[self.rf_tambahan["umur"]["fitur"]]) \
+            if "umur" in self.rf_tambahan else None
         rek = []
         for i, j in enumerate(order):
             r = v.iloc[j]
@@ -311,6 +326,8 @@ class ProposalRecommender:
                 "kebutuhan_air": r["kebutuhan_air"], "ketahanan_hama_skala": int(r["ketahanan_hama_skala"]),
                 "ketinggian_optimal_mdpl": r["ketinggian_optimal_mdpl"],
                 "estimasi_hasil_ton_ha": round(float(r["potensi_hasil_num"]) * float(skor[j]) / 100.0, 2),
+                "prediksi_hasil_ton_ha": round(float(pred_hasil[j]), 2) if pred_hasil is not None else None,
+                "prediksi_umur_panen_hari": int(round(float(pred_umur[j]))) if pred_umur is not None else None,
             })
 
         imp = self.rf_var["importance_kelompok"]

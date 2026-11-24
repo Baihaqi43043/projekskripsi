@@ -1,0 +1,65 @@
+{
+  "run_id": "20261125_013424",
+  "timestamp": "2026-11-25 01:34:24",
+  "git": {
+    "commit": "3aa84c4",
+    "branch": "pipeline-proposal",
+    "dirty": true
+  },
+  "stage": "RF_UMUR_Hybrid",
+  "environment": "local",
+  "dataset": {
+    "train_samples": 24000,
+    "test_samples": 6000,
+    "num_classes": 25
+  },
+  "hyperparameters": {
+    "target": "umur_panen_aktual_dummy",
+    "param_dist": {
+      "n_estimators": [
+        100,
+        200,
+        300
+      ],
+      "max_depth": [
+        null,
+        10,
+        15,
+        20
+      ],
+      "min_samples_split": [
+        2,
+        5,
+        10
+      ],
+      "min_samples_leaf": [
+        1,
+        2,
+        4
+      ],
+      "max_features": [
+        "sqrt",
+        0.3,
+        0.5
+      ]
+    },
+    "n_iter": 12,
+    "seeds": [
+      42,
+      43,
+      44,
+      45,
+      46
+    ],
+    "encoder_lstm": {
+      "bundle": "models/proposal_bundle.joblib",
+      "run_id": "20261125_004642",
+      "dilatih": "2026-11-25 00:46:44"
+    }
+  },
+  "loss_akhir": null,
+  "metrics": {},
+  "top_features": [],
+  "duration_sec": 272.0,
+  "catatan": "Umur panen aktual (hari); MAE=1.76±0.00, R2=0.977, MAE_normal=1.74, R2_normal=0.976"
+}

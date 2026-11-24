@@ -100,6 +100,8 @@ HTML_PAGE = r"""<!DOCTYPE html>
   .meter { height: 7px; background: var(--bar); border-radius: 99px; margin: 8px 0; overflow: hidden; }
   .meter > span { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
   .meta { color: var(--muted); font-size: .82rem; }
+  .pred { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .88rem; margin-bottom: 4px; }
+  .pred b { font-variant-numeric: tabular-nums; }
   .why li { margin-bottom: 8px; }
   .why .meter > span { background: var(--model1); }
   .footer { margin-top: 18px; color: var(--muted); font-size: .8rem; }
@@ -235,10 +237,17 @@ async function jalankan() {
       <div class="rec-head"><span class="rec-name">${r.peringkat}. ${r.varietas.replaceAll("_", " ")}</span>
         <span class="rec-score">${r.skor}%</span></div>
       <div class="meter"><span style="width:${r.skor}%"></span></div>
-      <div class="meta">${r.komoditas || ""} · umur panen ${r.umur_panen_hari ?? "–"} hari · potensi ${r.potensi_hasil_ton_ha ?? "–"} t/ha · kebutuhan air ${r.kebutuhan_air ?? "–"}${r.estimasi_hasil_ton_ha != null ? ` · <b>perkiraan hasil ${r.estimasi_hasil_ton_ha} t/ha</b>` : ""}</div>
+      ${r.prediksi_hasil_ton_ha != null || r.prediksi_umur_panen_hari != null ? `
+      <div class="pred">
+        ${r.prediksi_hasil_ton_ha != null ? `<span>Prediksi hasil <b>${r.prediksi_hasil_ton_ha} t/ha</b></span>` : ""}
+        ${r.prediksi_umur_panen_hari != null ? `<span>Prediksi umur panen <b>${r.prediksi_umur_panen_hari} hari</b></span>` : ""}
+      </div>` : ""}
+      <div class="meta">${r.komoditas || ""} · deskripsi: umur ${r.umur_panen_hari ?? "–"} hari · potensi ${r.potensi_hasil_ton_ha ?? "–"} t/ha · kebutuhan air ${r.kebutuhan_air ?? "–"}${r.prediksi_hasil_ton_ha == null && r.estimasi_hasil_ton_ha != null ? ` · <b>perkiraan hasil ${r.estimasi_hasil_ton_ha} t/ha</b>` : ""}</div>
     </div>`).join("");
+  const adaPrediksi = d.rekomendasi.some(r => r.prediksi_hasil_ton_ha != null);
   $("m2note").textContent = d.model2.startsWith("RF kecocokan")
-    ? "Skor kecocokan 0–100: Random Forest menilai ke-25 varietas lalu mengambil 3 tertinggi. Perkiraan hasil = potensi hasil × skor."
+    ? "Skor kecocokan 0–100: Random Forest menilai ke-25 varietas lalu mengambil 3 tertinggi." +
+      (adaPrediksi ? " Hasil panen dan umur panen diprediksi model Random Forest terpisah." : " Perkiraan hasil = potensi hasil × skor.")
     : "Skor kecocokan = probabilitas kelas dari Random Forest.";
 
   $("why").innerHTML = d.alasan.map(a => `
@@ -264,7 +273,9 @@ async function init() {
   const m2 = META.model2, mt = m2.metrik_test;
   $("footer").textContent = `Model 1 LSTM: run ${META.run_id} (${META.lokasi.length} lokasi, dilatih ${META.created_at}) · ` +
     `Model 2: ${m2.nama}` + (mt ? ` · test 2025 (tanpa bulan hujan ekstrem): MAE skor ${mt.MAE_normal.toFixed(1)}, ` +
-    `Spearman ${mt.spearman_rata2_normal.toFixed(2)}, komoditas tepat ${(mt.komoditas_top1_tepat_normal * 100).toFixed(0)}%` :
+    `Spearman ${mt.spearman_rata2_normal.toFixed(2)}, komoditas tepat ${(mt.komoditas_top1_tepat_normal * 100).toFixed(0)}%` +
+    Object.entries(m2.tambahan || {}).map(([k, t]) =>
+      ` · prediksi ${k}: MAE ${t.metrik_test.MAE_normal.toFixed(2)} ${t.satuan}, R² ${t.metrik_test.R2_normal.toFixed(2)}`).join("") :
     ` · Accuracy ${META.metrics.accuracy} · Top-3 ${META.metrics.top_3_accuracy}`);
   jalankan();
 }

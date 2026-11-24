@@ -1,6 +1,6 @@
 ================================================================================
 LOG PERUBAHAN PARAMETER & DAMPAK TERHADAP AKURASI MODEL
-Diperbarui: 2026-11-25 01:10:34
+Diperbarui: 2026-11-25 01:49:55
 ================================================================================
 MODEL TERBAIK SAAT INI : Hybrid_LSTM_RF (local) | Acc=0.425 | F1=0.4624 | Top-3=0.625
 Parameter Terbaik      : {"n_estimators": 200, "max_depth": 15, "min_samples_split": 2, "min_samples_leaf": 1, "class_weight": "balanced"}
@@ -121,12 +121,35 @@ Parameter Terbaik      : {"n_estimators": 200, "max_depth": 15, "min_samples_spl
     Perubahan Param : encoder_lstm: {'bundle': 'models/proposal_bundle.joblib', 'run_id': '20261125_004642', 'dilatih': '2026-11-25 00:46:44'} -> {'sumber': 'LSTM harian, rata-rata vektor bulan t-1', 'file': 'data/processed/lstm_harian/embedding_bulanan.csv'}
     Hasil           : Acc=0.095 (-0.0092), F1=None, Top-3=0.225
     Catatan         : RF regresi skor kecocokan many-to-many; MAE=25.18±0.14, R2=-0.118, Top1=0.095, Top3=0.225
+[30] 2026-11-25 01:29:52 | RF_HASIL_Hybrid (local) | Commit: 3aa84c4
+    Perubahan Param : target: skor_kecocokan -> hasil_dummy_ton_ha; encoder_lstm: {'sumber': 'LSTM harian, rata-rata vektor bulan t-1', 'file': 'data/processed/lstm_harian/embedding_bulanan.csv'} -> {'bundle': 'models/proposal_bundle.joblib', 'run_id': '20261125_004642', 'dilatih': '2026-11-25 00:46:44'}
+    Hasil           : Acc=None, F1=None, Top-3=None
+    Catatan         : Hasil panen (t/ha); MAE=1.98±0.01, R2=0.196, MAE_normal=1.35, R2_normal=0.578
+[31] 2026-11-25 01:34:24 | RF_UMUR_Hybrid (local) | Commit: 3aa84c4
+    Perubahan Param : target: hasil_dummy_ton_ha -> umur_panen_aktual_dummy
+    Hasil           : Acc=None, F1=None, Top-3=None
+    Catatan         : Umur panen aktual (hari); MAE=1.76±0.00, R2=0.977, MAE_normal=1.74, R2_normal=0.976
+[32] 2026-11-25 01:39:44 | RF_HASIL_Hybrid_Harian1 (local) | Commit: 3aa84c4
+    Perubahan Param : target: umur_panen_aktual_dummy -> hasil_dummy_ton_ha; encoder_lstm: {'bundle': 'models/proposal_bundle.joblib', 'run_id': '20261125_004642', 'dilatih': '2026-11-25 00:46:44'} -> {'sumber': 'LSTM harian, rata-rata vektor bulan t-1', 'file': 'data/processed/lstm_harian_1epoch/embedding_bulanan.csv'}
+    Hasil           : Acc=None, F1=None, Top-3=None
+    Catatan         : Hasil panen (t/ha); MAE=1.91±0.01, R2=0.251, MAE_normal=1.31, R2_normal=0.618
+[33] 2026-11-25 01:44:49 | RF_UMUR_Hybrid_Harian1 (local) | Commit: 3aa84c4
+    Perubahan Param : target: hasil_dummy_ton_ha -> umur_panen_aktual_dummy
+    Hasil           : Acc=None, F1=None, Top-3=None
+    Catatan         : Umur panen aktual (hari); MAE=1.77±0.01, R2=0.976, MAE_normal=1.71, R2_normal=0.977
+[34] 2026-11-25 01:49:54 | RF_Varietas_Hybrid_Harian1 (local) | Commit: 3aa84c4
+    Perubahan Param : target: umur_panen_aktual_dummy -> skor_kecocokan
+    Hasil           : Acc=0.095, F1=None, Top-3=0.2208
+    Catatan         : RF regresi skor kecocokan many-to-many; MAE=25.18±0.14, R2=-0.118, Top1=0.095, Top3=0.221
 
 ================================================================================
 RIWAYAT COMMIT GIT
 ================================================================================
 Commit  | Tanggal             | Author       | Pesan Commit
 --------------------------------------------------------------------------------
+3aa84c4 | 2026-11-25 01:24:59 | baihaqi43043 | tambah prediksi hasil panen & umur panen aktual; opsi jumlah epoch LSTM harian
+ebda3d4 | 2026-11-25 01:14:10 | baihaqi43043 | web: Model 2 memakai RF kecocokan 25 varietas (many-to-many)
+af47cda | 2026-11-25 01:11:08 | baihaqi43043 | tambah LSTM harian (maks 5 epoch) yang dirata-rata bulanan untuk RF varietas
 9f95e9c | 2026-11-25 00:51:27 | baihaqi43043 | training ulang 20 lokasi: LSTM proposal, data dummy many-to-many, dan RF varietas
 7183299 | 2026-11-25 00:45:09 | baihaqi43043 | pakai 20 lokasi; tambah training RF many-to-many dengan evaluasi tanpa hujan ekstrem
 e708ab2 | 2026-11-25 00:35:41 | baihaqi43043 | tambah pembuat dataset training RF dari data many-to-many varietas

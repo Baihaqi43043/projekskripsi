@@ -1,0 +1,64 @@
+{
+  "run_id": "20261125_013944",
+  "timestamp": "2026-11-25 01:39:44",
+  "git": {
+    "commit": "3aa84c4",
+    "branch": "pipeline-proposal",
+    "dirty": true
+  },
+  "stage": "RF_HASIL_Hybrid_Harian1",
+  "environment": "local",
+  "dataset": {
+    "train_samples": 24000,
+    "test_samples": 6000,
+    "num_classes": 25
+  },
+  "hyperparameters": {
+    "target": "hasil_dummy_ton_ha",
+    "param_dist": {
+      "n_estimators": [
+        100,
+        200,
+        300
+      ],
+      "max_depth": [
+        null,
+        10,
+        15,
+        20
+      ],
+      "min_samples_split": [
+        2,
+        5,
+        10
+      ],
+      "min_samples_leaf": [
+        1,
+        2,
+        4
+      ],
+      "max_features": [
+        "sqrt",
+        0.3,
+        0.5
+      ]
+    },
+    "n_iter": 12,
+    "seeds": [
+      42,
+      43,
+      44,
+      45,
+      46
+    ],
+    "encoder_lstm": {
+      "sumber": "LSTM harian, rata-rata vektor bulan t-1",
+      "file": "data/processed/lstm_harian_1epoch/embedding_bulanan.csv"
+    }
+  },
+  "loss_akhir": null,
+  "metrics": {},
+  "top_features": [],
+  "duration_sec": 316.45,
+  "catatan": "Hasil panen (t/ha); MAE=1.91±0.01, R2=0.251, MAE_normal=1.31, R2_normal=0.618"
+}
