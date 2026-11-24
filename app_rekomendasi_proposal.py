@@ -239,7 +239,8 @@ async function jalankan() {
       <div class="meter"><span style="width:${r.skor}%"></span></div>
       ${r.prediksi_hasil_ton_ha != null || r.prediksi_umur_panen_hari != null ? `
       <div class="pred">
-        ${r.prediksi_hasil_ton_ha != null ? `<span>Prediksi hasil <b>${r.prediksi_hasil_ton_ha} t/ha</b></span>` : ""}
+        ${r.prediksi_hasil_ton_ha != null ? `<span>Prediksi hasil (Hybrid 32 dimensi) <b>${r.prediksi_hasil_ton_ha} t/ha</b></span>` : ""}
+        ${r.prediksi_hasil_cuaca_ton_ha != null ? `<span>Prediksi hasil (cuaca biasa) <b>${r.prediksi_hasil_cuaca_ton_ha} t/ha</b></span>` : ""}
         ${r.prediksi_umur_panen_hari != null ? `<span>Prediksi umur panen <b>${r.prediksi_umur_panen_hari} hari</b></span>` : ""}
       </div>` : ""}
       <div class="meta">${r.komoditas || ""} · deskripsi: umur ${r.umur_panen_hari ?? "–"} hari · potensi ${r.potensi_hasil_ton_ha ?? "–"} t/ha · kebutuhan air ${r.kebutuhan_air ?? "–"}${r.prediksi_hasil_ton_ha == null && r.estimasi_hasil_ton_ha != null ? ` · <b>perkiraan hasil ${r.estimasi_hasil_ton_ha} t/ha</b>` : ""}</div>
@@ -275,7 +276,9 @@ async function init() {
     `Model 2: ${m2.nama}` + (mt ? ` · test 2025 (tanpa bulan hujan ekstrem): MAE skor ${mt.MAE_normal.toFixed(1)}, ` +
     `Spearman ${mt.spearman_rata2_normal.toFixed(2)}, komoditas tepat ${(mt.komoditas_top1_tepat_normal * 100).toFixed(0)}%` +
     Object.entries(m2.tambahan || {}).map(([k, t]) =>
-      ` · prediksi ${k}: MAE ${t.metrik_test.MAE_normal.toFixed(2)} ${t.satuan}, R² ${t.metrik_test.R2_normal.toFixed(2)}`).join("") :
+      ` · prediksi ${k} (Hybrid 32 dimensi): MAE ${t.metrik_test.MAE_normal.toFixed(2)} ${t.satuan}, R² ${t.metrik_test.R2_normal.toFixed(2)}`).join("") +
+    (m2.hasil_cuaca ? ` · prediksi hasil (cuaca biasa): MAE ${m2.hasil_cuaca.metrik_test.MAE_normal.toFixed(2)} t/ha, ` +
+      `R² ${m2.hasil_cuaca.metrik_test.R2_normal.toFixed(2)}` : "") :
     ` · Accuracy ${META.metrics.accuracy} · Top-3 ${META.metrics.top_3_accuracy}`);
   jalankan();
 }

@@ -26,6 +26,7 @@ BUNDLE_PATH = "models/proposal_bundle.joblib"
 RF_VARIETAS_PATH = "models/rf_varietas_hybrid.joblib"
 RF_HASIL_PATH = "models/rf_hasil_hybrid.joblib"
 RF_UMUR_PATH = "models/rf_umur_hybrid.joblib"
+RF_HASIL_CUACA_PATH = "models/rf_hasil_cuaca.joblib"
 KEBUTUHAN_AIR_KODE = {"Sedikit": 0, "Sedang": 1, "Banyak": 2}
 NAMA_BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus",
               "September", "Oktober", "November", "Desember"]
@@ -132,6 +133,12 @@ class ProposalRecommender:
                         m = joblib.load(path)
                         if m.get("encoder_lstm", {}).get("run_id") == b["run_id"]:
                             self.rf_tambahan[kunci] = m
+                # Pembanding: prediksi hasil dengan variabel cuaca biasa (tanpa vektor LSTM)
+                self.rf_hasil_cuaca = joblib.load(RF_HASIL_CUACA_PATH) if os.path.exists(RF_HASIL_CUACA_PATH) else None
+                if self.rf_hasil_cuaca is not None:
+                    from src.fitur_cuaca import fitur_cuaca
+
+                    self.fc = fitur_cuaca(self.climate, tambah_bulan_depan=True).set_index(["id_lokasi", "tahun", "bulan"])
                 dummy_path = os.path.join(raw_dir, "dummy_varietas", "kecocokan_varietas_semua.csv")
                 self.var_dummy = pd.read_csv(dummy_path) if os.path.exists(dummy_path) else None
             else:
@@ -168,7 +175,10 @@ class ProposalRecommender:
             "model2": ({"nama": "RF kecocokan varietas (25 varietas)", "run_id": self.rf_var["run_id"],
                         "metrik_test": self.rf_var["metrik_test"],
                         "tambahan": {k: {"run_id": m["run_id"], "satuan": m["satuan"], "metrik_test": m["metrik_test"]}
-                                     for k, m in self.rf_tambahan.items()}} if self.rf_var is not None
+                                     for k, m in self.rf_tambahan.items()},
+                        "hasil_cuaca": ({"run_id": self.rf_hasil_cuaca["run_id"], "set": self.rf_hasil_cuaca["set"],
+                                         "metrik_test": self.rf_hasil_cuaca["metrik_test"]}
+                                        if self.rf_hasil_cuaca is not None else None)} if self.rf_var is not None
                        else {"nama": "RF klasifikasi (12 label prototipe)", "run_id": b["run_id"], "metrik_test": None}),
             "opsi": {"tekstur_tanah": ["Pasir", "Lanau", "Lempung"], "drainase": ["Baik", "Rusak"],
                      "risiko_bencana_hama": ["Rendah", "Sedang", "Tinggi"]},
@@ -316,6 +326,12 @@ class ProposalRecommender:
             if "hasil" in self.rf_tambahan else None
         pred_umur = self.rf_tambahan["umur"]["model"].predict(X[self.rf_tambahan["umur"]["fitur"]]) \
             if "umur" in self.rf_tambahan else None
+        pred_hasil_cuaca = None
+        if self.rf_hasil_cuaca is not None and (loc_id, tahun, bulan) in self.fc.index:
+            baris = self.fc.loc[(loc_id, tahun, bulan)]
+            for col in self.rf_hasil_cuaca["fitur_cuaca"]:
+                X[col] = float(baris[col])
+            pred_hasil_cuaca = self.rf_hasil_cuaca["model"].predict(X[self.rf_hasil_cuaca["fitur"]])
         rek = []
         for i, j in enumerate(order):
             r = v.iloc[j]
@@ -327,6 +343,7 @@ class ProposalRecommender:
                 "ketinggian_optimal_mdpl": r["ketinggian_optimal_mdpl"],
                 "estimasi_hasil_ton_ha": round(float(r["potensi_hasil_num"]) * float(skor[j]) / 100.0, 2),
                 "prediksi_hasil_ton_ha": round(float(pred_hasil[j]), 2) if pred_hasil is not None else None,
+                "prediksi_hasil_cuaca_ton_ha": round(float(pred_hasil_cuaca[j]), 2) if pred_hasil_cuaca is not None else None,
                 "prediksi_umur_panen_hari": int(round(float(pred_umur[j]))) if pred_umur is not None else None,
             })
 

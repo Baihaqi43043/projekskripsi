@@ -1,6 +1,6 @@
 ================================================================================
 LOG PERUBAHAN PARAMETER & DAMPAK TERHADAP AKURASI MODEL
-Diperbarui: 2026-11-25 01:49:55
+Diperbarui: 2026-11-25 02:12:18
 ================================================================================
 MODEL TERBAIK SAAT INI : Hybrid_LSTM_RF (local) | Acc=0.425 | F1=0.4624 | Top-3=0.625
 Parameter Terbaik      : {"n_estimators": 200, "max_depth": 15, "min_samples_split": 2, "min_samples_leaf": 1, "class_weight": "balanced"}
@@ -141,12 +141,17 @@ Parameter Terbaik      : {"n_estimators": 200, "max_depth": 15, "min_samples_spl
     Perubahan Param : target: umur_panen_aktual_dummy -> skor_kecocokan
     Hasil           : Acc=0.095, F1=None, Top-3=0.2208
     Catatan         : RF regresi skor kecocokan many-to-many; MAE=25.18±0.14, R2=-0.118, Top1=0.095, Top3=0.221
+[35] 2026-11-25 02:12:18 | RF_HASIL_Cuaca (local) | Commit: 328e2fc
+    Perubahan Param : target: skor_kecocokan -> hasil_dummy_ton_ha; encoder_lstm: {'sumber': 'LSTM harian, rata-rata vektor bulan t-1', 'file': 'data/processed/lstm_harian_1epoch/embedding_bulanan.csv'} -> -; set_terpilih: - -> C2 + rata-rata 3 bulan; fitur_cuaca: - -> ['rata12_curah_hujan', 'rata12_suhu_rata_rata', 'rata12_suhu_maksimal', 'rata12_suhu_minimum', 'rata12_kelembaban_rata_rata', 'rata12_lama_penyinaran', 'rata3_curah_hujan', 'rata3_suhu_rata_rata', 'rata3_suhu_maksimal', 'rata3_suhu_minimum', 'rata3_kelembaban_rata_rata', 'rata3_lama_penyinaran']
+    Hasil           : Acc=None, F1=None, Top-3=None
+    Catatan         : Hasil panen dengan cuaca biasa (C2 + rata-rata 3 bulan); MAE=1.73, R2=0.393, MAE_normal=1.30, R2_normal=0.614
 
 ================================================================================
 RIWAYAT COMMIT GIT
 ================================================================================
 Commit  | Tanggal             | Author       | Pesan Commit
 --------------------------------------------------------------------------------
+328e2fc | 2026-11-25 01:50:49 | baihaqi43043 | web: tampilkan prediksi hasil panen & umur panen; hasil LSTM harian 1 epoch
 3aa84c4 | 2026-11-25 01:24:59 | baihaqi43043 | tambah prediksi hasil panen & umur panen aktual; opsi jumlah epoch LSTM harian
 ebda3d4 | 2026-11-25 01:14:10 | baihaqi43043 | web: Model 2 memakai RF kecocokan 25 varietas (many-to-many)
 af47cda | 2026-11-25 01:11:08 | baihaqi43043 | tambah LSTM harian (maks 5 epoch) yang dirata-rata bulanan untuk RF varietas
