@@ -157,3 +157,25 @@ random_forest:
 
 recommendation:
   top_k: 3
+
+# ------------------------------------------------------------------------------------------
+# Pipeline Hybrid sesuai proposal (train_hybrid_proposal.py)
+# ------------------------------------------------------------------------------------------
+proposal:
+  # Split kronologis berdasarkan TAHUN BULAN TARGET (Bagian 3.7 & 3.11 proposal):
+  #   train <= train_end_year | validasi = val_year | test = test_year (hanya dipakai sekali)
+  train_end_year: 2023
+  val_year: 2024
+  test_year: 2025
+  # Fold cross-validation Random Forest (expanding window): latih < tahun, validasi = tahun
+  cv_val_years: [2023, 2024]
+  # Preprocessing (Bagian 3.10): penanganan outlier IQR (pagar Q1-k*IQR, Q3+k*IQR) + Z-Score
+  iqr_factor: 1.5
+  seasonal_features: true      # fitur turunan indeks musim (sin/cos bulan)
+  # Encoder LSTM (arsitektur di bagian `lstm:`), dilatih meramal iklim bulan berikutnya
+  max_epochs: 300
+  early_stopping_patience: 20
+  # Random Forest tuning (Bagian 3.11 Tahap 5)
+  rf_search_iter: 20
+  # Ulangi eksperimen dengan beberapa seed -> laporkan rata-rata +- std
+  seeds: [42, 43, 44, 45, 46]

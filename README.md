@@ -113,7 +113,29 @@ Output: `models/hybrid_rf.pkl` + metrik (Accuracy, Precision, Recall, F1, Top-3)
 python main.py
 ```
 
-### D. BiLSTM Cuaca Harian (prediksi 1 hari ke depan)
+### D. Pipeline Hybrid Sesuai Proposal (dipakai untuk Bab IV)
+```bash
+python train_hybrid_proposal.py
+```
+Satu perintah menjalankan seluruh alur Bab III proposal dan mencatat hasilnya ke `results/runs/<id>_Hybrid_LSTM_RF_Proposal/`.
+
+| Komponen | Proposal | Implementasi |
+|---|---|---|
+| Data | Tabel 3.1–3.2: iklim bulanan 6 variabel + 9 fitur statis | `aceh_utara_agroklimat_bulanan.csv` + `aceh_utara_tanah_statis.csv` (lokasi aktif di config) |
+| Preprocessing | 3.10: interpolasi, outlier IQR, Z-Score, indeks musim | sama; statistik dihitung dari data train saja |
+| Split | 3.7 (80/20) & 3.11 (train/validation/test) | kronologis per tahun target: train ≤2023, validasi 2024, test 2025 |
+| LSTM | 3.10: 2 layer 128 → 64 + dropout → vektor 32 | sama (`TemporalLSTMEncoder`); dilatih meramal iklim bulan berikutnya, early stopping di validasi |
+| Random Forest | 3.10–3.11: [LSTM 32 + statis], tuning + cross-validation | RandomizedSearchCV, CV expanding-window per tahun, refit di train+validasi |
+| Evaluasi | 3.11 Tahap 6: Acc, Precision, Recall, F1, confusion matrix, feature importance, baseline single model, Top-K | sama + macro-F1, Top-5; diulang beberapa seed (rata-rata ± std) |
+
+Penyesuaian dari proposal yang perlu ditulis di disertasi: panjang sekuens 12 bulan (bukan 60) karena
+data hanya 72 bulan; sumber iklim NASA POWER (bukan BMKG); `lama_penyinaran` berupa radiasi (MJ/m²/hari).
+
+Output: `metrics_per_seed.csv`, `metrics_summary.csv`, `confusion_matrix.png`, `feature_importance.png`,
+`classification_report.txt`, `preprocessing.json`, `lstm_loss_history_seed0.csv`; model seed pertama di
+`models/proposal_lstm_encoder.pt` & `models/proposal_hybrid_rf.pkl`.
+
+### E. BiLSTM Cuaca Harian (prediksi 1 hari ke depan)
 ```bash
 python train_bilstm_weather.py              # setara notebook training_lstm_cuaca.ipynb
 python predict_production_2025.py           # simulasi Jan-Mar 2025

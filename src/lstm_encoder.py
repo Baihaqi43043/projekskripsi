@@ -101,6 +101,102 @@ def train_lstm_encoder(
     return model
 
 
+def train_forecast_encoder(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_val: np.ndarray,
+    y_val: np.ndarray,
+    hidden_1: int = 128,
+    hidden_2: int = 64,
+    embedding_dim: int = 32,
+    dropout: float = 0.2,
+    max_epochs: int = 300,
+    patience: int = 20,
+    batch_size: int = 16,
+    learning_rate: float = 1e-3,
+    seed: int = 42,
+) -> TemporalLSTMEncoder:
+    """Latih encoder LSTM (arsitektur proposal 128 -> 64 -> 32) untuk MERAMAL iklim bulan berikutnya.
+
+    Encoder tidak pernah melihat label varietas (self-supervised), sehingga embedding 32-dim
+    yang diekstrak tidak bocor ke tahap Random Forest. Early stopping & ReduceLROnPlateau
+    memakai data VALIDASI (bukan data test).
+    """
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    model = TemporalLSTMEncoder(
+        input_dim=X_train.shape[-1],
+        num_classes=y_train.shape[-1],  # head regresi: jumlah variabel iklim yang diramal
+        hidden_1=hidden_1,
+        hidden_2=hidden_2,
+        embedding_dim=embedding_dim,
+        dropout=dropout,
+    ).to(device)
+
+    gen = torch.Generator().manual_seed(seed)
+    loader = DataLoader(
+        TensorDataset(torch.tensor(X_train, dtype=torch.float32), torch.tensor(y_train, dtype=torch.float32)),
+        batch_size=batch_size,
+        shuffle=True,
+        generator=gen,
+    )
+    x_val_t = torch.tensor(X_val, dtype=torch.float32).to(device)
+    y_val_t = torch.tensor(y_val, dtype=torch.float32).to(device)
+
+    criterion = nn.MSELoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=max(1, patience // 3))
+
+    history: list[dict[str, float]] = []
+    best_val, best_state, best_epoch, wait = float("inf"), None, 0, 0
+    for epoch in range(1, max_epochs + 1):
+        model.train()
+        total = 0.0
+        for bx, by in loader:
+            bx, by = bx.to(device), by.to(device)
+            optimizer.zero_grad()
+            loss = criterion(model(bx), by)
+            loss.backward()
+            optimizer.step()
+            total += loss.item() * len(bx)
+        train_loss = total / len(loader.dataset)
+
+        model.eval()
+        with torch.no_grad():
+            val_loss = float(criterion(model(x_val_t), y_val_t).item())
+        scheduler.step(val_loss)
+        history.append({"epoch": epoch, "train_loss": train_loss, "val_loss": val_loss})
+
+        if val_loss < best_val - 1e-6:
+            best_val, best_epoch, wait = val_loss, epoch, 0
+            best_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
+        else:
+            wait += 1
+            if wait >= patience:
+                break
+
+    if best_state is not None:
+        model.load_state_dict(best_state)
+    model.eval()
+    model.training_history_ = {
+        "best_epoch": best_epoch,
+        "best_val_loss": best_val,
+        "epochs_run": len(history),
+        "loss_per_epoch": history,
+    }
+    return model
+
+
+@torch.no_grad()
+def predict_forecast(model: TemporalLSTMEncoder, X_seq: np.ndarray) -> np.ndarray:
+    """Prediksi iklim bulan berikutnya (skala ter-normalisasi) dari encoder peramal."""
+    device = next(model.parameters()).device
+    model.eval()
+    return model(torch.tensor(X_seq, dtype=torch.float32).to(device)).cpu().numpy()
+
+
 @torch.no_grad()
 def extract_temporal_features(model: TemporalLSTMEncoder, X_seq: np.ndarray) -> np.ndarray:
     """Extract 32-dimensional temporal feature vectors from trained LSTM."""

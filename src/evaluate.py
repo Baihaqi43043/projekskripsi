@@ -27,6 +27,13 @@ def compute_classification_metrics(
         "f1_weighted": round(
             float(f1_score(y_true, y_pred, average="weighted", zero_division=0)), 4
         ),
+        "precision_macro": round(
+            float(precision_score(y_true, y_pred, average="macro", zero_division=0)), 4
+        ),
+        "recall_macro": round(
+            float(recall_score(y_true, y_pred, average="macro", zero_division=0)), 4
+        ),
+        "f1_macro": round(float(f1_score(y_true, y_pred, average="macro", zero_division=0)), 4),
     }
 
     if y_prob is not None and classes is not None:
