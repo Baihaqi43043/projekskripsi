@@ -14,7 +14,8 @@ projekskripsi/
 │   ├── raw/                      # Data mentah (DI-COMMIT ke Git)
 │   │   ├── aceh_utara_agroklimat_harian.csv    # 20 lokasi x 2.192 hari (NASA POWER)
 │   │   ├── aceh_utara_agroklimat_bulanan.csv   # 20 lokasi x 72 bulan (agregasi harian)
-│   │   ├── aceh_utara_tanah_statis.csv         # 20 lokasi (SoilGrids + dummy) — BELUM ADA, lihat bagian 3
+│   │   ├── varietas_tanaman.csv                # 25 varietas (10 PDF + 15 dummy referensi)
+│   │   ├── aceh_utara_tanah_statis.csv         # 20 lokasi (pH/tekstur/C-organik SoilGrids; N/P/K/drainase/risiko dummy)
 │   │   └── lstm/
 │   │       ├── training/training.csv           # Harian 5 lokasi (L001-L005), 2020-2024
 │   │       └── testing/testing.csv             # Harian 5 lokasi (L001-L005), 2025
@@ -68,9 +69,6 @@ Semua script dijalankan dari folder root repo (`python train_rf.py`, dst.).
 
 Data iklim sudah ada di `data/raw/` (ikut di-commit), jadi **tidak perlu download ulang**.
 
-> **Status 24 Nov 2026:** `aceh_utara_tanah_statis.csv` belum ada di repo (file lama tidak pernah
-> di-commit, dan API SoilGrids sedang tidak merespons). Sebelum `train_lstm.py` bisa jalan, salin
-> file aslinya ke `data/raw/` **atau** jalankan `python fetch_data.py --only soil` saat SoilGrids aktif.
 Untuk memperbarui data atau setelah mengubah daftar lokasi di config:
 
 ```bash
@@ -84,6 +82,10 @@ python fetch_data.py --only soil      # hanya tanah
   — lokasi yang memakai dummy ditandai `DUMMY` di kolom `sumber_tanah`.
 - Script training **tidak** mengakses internet; jika file belum ada, script berhenti dan menyuruh menjalankan `fetch_data.py`.
 - **Satuan `lama_penyinaran`**: data NASA POWER `ALLSKY_SFC_SW_DWN` adalah **radiasi (MJ/m²/hari)**, bukan jam/hari.
+
+**Lokasi aktif:** file data berisi 20 lokasi, tetapi pipeline varietas sementara hanya memakai
+5 lokasi (`active_location_ids: L001-L005` di `configs/model_config.yaml`), sama dengan split BiLSTM.
+Kosongkan daftar itu untuk memakai semua 20 lokasi.
 
 Detail sumber & status data (riil vs dummy) ada di `catatan_sumber_data.txt`.
 

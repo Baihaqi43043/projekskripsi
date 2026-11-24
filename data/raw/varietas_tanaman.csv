@@ -1,0 +1,26 @@
+id_varietas,nama_varietas,komoditas,umur_panen_hari,potensi_hasil_ton_ha,ketahanan_hama_skala,kebutuhan_air,ketinggian_optimal_mdpl,sumber_status
+1,Ciherang,Padi,116,7.0,4,Banyak,0-500,PDF Tabel 3.7
+2,IR64,Padi,110,6.5,3,Banyak,0-500,PDF Tabel 3.7
+3,Inpari-32,Padi,114-119,6.0-6.9,4,Banyak,0-600,PDF Tabel 3.7
+4,Inpari-42,Padi,108-115,7.0-9.5,4,Sedang,0-600,PDF Tabel 3.7
+5,BISI-18,Jagung,100,10.5,4,Sedang,0-800,PDF Tabel 3.7
+6,NK-212,Jagung,95-100,9.0-11.0,4,Sedang,0-800,PDF Tabel 3.7
+7,Pioneer P-27,Jagung,100-105,10.0-13.0,4,Banyak,0-800,PDF Tabel 3.7
+8,Anjasmoro,Kedelai,82-92,2.0-3.2,4,Sedang,0-600,PDF Tabel 3.7
+9,Grobogan,Kedelai,76-78,2.5-3.4,4,Sedikit,0-500,PDF Tabel 3.7
+10,Argomulyo,Kedelai,85-90,1.5-2.5,4,Sedang,0-500,PDF Tabel 3.7
+11,Mekongga,Padi,116-125,8.4,4,Banyak,0-500,Dummy referensi Kementan
+12,Situ Bagendit,Padi,110-120,6.0,3,Sedang,0-700,Dummy referensi Kementan
+13,Inpari-30,Padi,111,9.6,4,Banyak,0-500,Dummy referensi Kementan
+14,Inpari-33,Padi,107,9.8,5,Banyak,0-600,Dummy referensi Kementan
+15,Inpago-12,Padi,111,10.2,4,Sedikit,0-800,Dummy referensi Kementan
+16,Bima-19 URI,Jagung,102,12.5,4,Sedang,0-800,Dummy referensi Kementan
+17,Bima-20 URI,Jagung,100,12.8,4,Sedang,0-800,Dummy referensi Kementan
+18,Lamuru,Jagung,95,7.6,3,Sedikit,0-800,Dummy referensi Kementan
+19,Sukmaraga,Jagung,105,8.5,4,Sedang,0-800,Dummy referensi Kementan
+20,JH-37,Jagung,99,12.5,4,Sedang,0-800,Dummy referensi Kementan
+21,Devon-1,Kedelai,83,3.1,4,Sedang,0-500,Dummy referensi Kementan
+22,Dering-1,Kedelai,81,2.8,4,Sedikit,0-500,Dummy referensi Kementan
+23,Detam-1,Kedelai,84,2.5,4,Sedang,0-500,Dummy referensi Kementan
+24,Biosoy-1,Kedelai,83,3.3,4,Sedang,0-500,Dummy referensi Kementan
+25,Dena-1,Kedelai,78,2.9,3,Sedikit,0-600,Dummy referensi Kementan

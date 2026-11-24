@@ -1,0 +1,21 @@
+id_lokasi,lintang,bujur,tekstur_tanah,ph_tanah,nitrogen,fosfor,kalium,karbon_organik,drainase,risiko_bencana_hama,nama_lokasi,ketinggian_tempat
+L001,5.0528,97.3117,Lanau,5.3,0.58,12.4,0.3,4.32,Baik,Rendah,Lhoksukon,8.0
+L002,5.0272,97.2714,Pasir,5.1,0.49,13.5,0.54,3.96,Baik,Rendah,Matangkuli,12.0
+L003,5.0911,97.2133,Lanau,5.55,0.31,10.7,0.34,3.72,Baik,Tinggi,Syamtalira Aron,6.0
+L004,5.2356,97.0086,Pasir,5.6,0.68,15.9,0.31,5.18,Baik,Sedang,Dewantara,4.0
+L005,5.1067,97.1056,Pasir,5.35,0.32,11.0,0.31,4.64,Baik,Rendah,Kuta Makmur,25.0
+L006,5.243,96.953,Lempung,5.5,0.28,14.4,0.35,4.85,Baik,Rendah,Muara Batu,5.0
+L007,5.134,97.197,Pasir,5.6,0.47,14.5,0.48,0.35,Baik,Rendah,Samudera,4.0
+L008,4.985,97.224,Pasir,5.05,0.63,14.6,0.3,3.75,Baik,Tinggi,Tanah Luas,18.0
+L009,5.059,97.243,Pasir,5.3,0.39,16.1,0.57,4.17,Baik,Rendah,Nibong,10.0
+L010,5.109,97.176,Lanau,5.55,0.21,15.4,0.51,4.6,Baik,Tinggi,Syamtalira Bayu,7.0
+L011,5.048,97.173,Pasir,5.4,0.18,13.6,0.53,3.37,Baik,Rendah,Meurah Mulia,14.0
+L012,5.118,97.276,Lanau,5.4,0.23,9.2,0.36,4.65,Baik,Sedang,Tanah Pasir,5.0
+L013,5.135,97.291,Lanau,5.7,0.2,16.1,0.51,6.14,Baik,Sedang,Lapang,3.0
+L014,5.083,97.392,Lempung,5.4,0.55,9.1,0.6,4.44,Baik,Rendah,Baktiya,9.0
+L015,5.088,97.345,Lanau,5.5,0.57,16.4,0.39,4.3,Baik,Rendah,Baktiya Barat,7.0
+L016,5.158,97.438,Lempung,5.35,0.59,14.1,0.41,5.0,Rusak,Rendah,Seunuddon,3.0
+L017,5.126,97.465,Lanau,5.55,0.63,15.8,0.37,4.14,Rusak,Tinggi,Tanah Jambo Aye,6.0
+L018,4.935,97.415,Lempung,4.95,0.47,12.2,0.45,3.62,Baik,Rendah,Langkahan,45.0
+L019,4.921,97.321,Pasir,5.1,0.86,16.1,0.49,3.08,Baik,Tinggi,Cot Girek,55.0
+L020,5.132,96.925,Pasir,5.2,0.58,16.3,0.35,3.3,Baik,Tinggi,Sawang,85.0

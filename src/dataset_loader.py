@@ -72,8 +72,24 @@ def beri_label_varietas_prototipe(
     return out
 
 
+def filter_active_locations(
+    climate_df: pd.DataFrame, soil_df: pd.DataFrame, cfg: dict[str, Any]
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Batasi data ke `data.active_location_ids` di config (jika diisi)."""
+    active = cfg["data"].get("active_location_ids")
+    if not active:
+        return climate_df, soil_df
+    unknown = set(active) - set(soil_df["id_lokasi"])
+    if unknown:
+        raise ValueError(f"active_location_ids {sorted(unknown)} tidak ada di data tanah.")
+    return (
+        climate_df[climate_df["id_lokasi"].isin(active)].reset_index(drop=True),
+        soil_df[soil_df["id_lokasi"].isin(active)].reset_index(drop=True),
+    )
+
+
 def prepare_shared_dataset(cfg: dict[str, Any]) -> dict[str, Any]:
-    """Load raw CSVs (or fetch if missing/incomplete) and build shared train/test splits."""
+    """Load raw CSVs from data/raw/ and build shared train/test splits."""
     raw_dir = cfg["data"]["raw_dir"]
     climate_path = os.path.join(raw_dir, "aceh_utara_agroklimat_bulanan.csv")
     soil_path = os.path.join(raw_dir, "aceh_utara_tanah_statis.csv")
@@ -96,7 +112,8 @@ def prepare_shared_dataset(cfg: dict[str, Any]) -> dict[str, Any]:
     if "sumber_tanah" in soil_df.columns and (soil_df["sumber_tanah"] == "DUMMY").any():
         dummy_locs = soil_df.loc[soil_df["sumber_tanah"] == "DUMMY", "id_lokasi"].tolist()
         print(f"[PERINGATAN] Data tanah lokasi {dummy_locs} masih DUMMY penuh (bukan SoilGrids).")
-    print(f"Memuat dataset Aceh Utara ({expected_locs} lokasi) dari data/raw/...")
+    climate_df, soil_df = filter_active_locations(climate_df, soil_df, cfg)
+    print(f"Memuat dataset Aceh Utara ({soil_df['id_lokasi'].nunique()} lokasi aktif) dari data/raw/...")
 
     climate_df = beri_label_varietas_prototipe(climate_df, soil_df)
 
@@ -119,6 +136,7 @@ def prepare_from_weather_embeddings(
     raw_dir = cfg["data"]["raw_dir"]
     climate_df = pd.read_csv(os.path.join(raw_dir, "aceh_utara_agroklimat_bulanan.csv"))
     soil_df = pd.read_csv(os.path.join(raw_dir, "aceh_utara_tanah_statis.csv"))
+    climate_df, soil_df = filter_active_locations(climate_df, soil_df, cfg)
 
     labeled_monthly = beri_label_varietas_prototipe(climate_df, soil_df)
     static_encoded = encode_static_categories(soil_df)

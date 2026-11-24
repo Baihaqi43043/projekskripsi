@@ -37,10 +37,11 @@ B. data/raw/aceh_utara_agroklimat_bulanan.csv
    - Status      : DATA RIIL (100% terisi dari NASA POWER API untuk 20 kecamatan).
 
 C. data/raw/aceh_utara_tanah_statis.csv
-   - STATUS FILE : BELUM ADA DI REPO (24 Nov 2026). File lama tidak pernah di-commit dan API
-                   SoilGrids sedang tidak merespons. Salin file asli ke data/raw/ atau jalankan
-                   `python fetch_data.py --only soil` saat SoilGrids aktif. Kolom baru
-                   `sumber_tanah` (SoilGrids/DUMMY) menandai asal data per lokasi.
+   - STATUS FILE : Di-commit 24 Nov 2026 (disalin dari file asli tim). Tervalidasi: pH semua
+                   kelipatan 0,05 (ciri SoilGrids), N/P/K/drainase/risiko identik dengan generator
+                   dummy di src/data_fetcher.py, koordinat & ketinggian cocok dengan config.
+   - PERLU DICEK : karbon_organik L007 (Samudera) = 0,35%, ~10x lebih kecil dari lokasi lain (3-6%).
+   - Fetch ulang via `python fetch_data.py --only soil` akan menambah kolom `sumber_tanah`.
    - Jumlah data : 20 baris (20 kecamatan di Kabupaten Aceh Utara: L001 - L020)
      Lhoksukon, Matangkuli, Syamtalira Aron, Dewantara, Kuta Makmur, Muara Batu,
      Samudera, Tanah Luas, Nibong, Syamtalira Bayu, Meurah Mulia, Tanah Pasir,
@@ -57,8 +58,8 @@ C. data/raw/aceh_utara_tanah_statis.csv
                                 untuk menggantikan data lab/Dinas yang belum ada.
 
 D. data/raw/varietas_tanaman.csv
-   - STATUS FILE : BELUM ADA DI REPO dan tidak dibuat oleh script mana pun. Belum dipakai kode;
-                   perlu disalin dari laptop yang menyusunnya.
+   - STATUS FILE : Di-commit 24 Nov 2026 (disalin dari file asli tim; tidak dibuat oleh script).
+                   Ke-12 label dummy di dataset_loader.py ada di daftar ini.
    - Jumlah data : 25 baris (25 varietas Padi, Jagung, dan Kedelai).
    - Kolom       : id_varietas, nama_varietas, komoditas, umur_panen_hari,
                    potensi_hasil_ton_ha, ketahanan_hama_skala (1-5),
@@ -76,8 +77,8 @@ D. data/raw/varietas_tanaman.csv
 - Sumber      : Aturan dummy berbasis kombinasi agroklimat (curah_hujan, suhu)
                 dan kondisi tanah (ph_tanah, drainase, ketinggian_tempat,
                 risiko_bencana_hama).
-- Jumlah kelas: 12 kelas varietas muncul pada dataset 20 lokasi (dari total
-                960 data train dan 240 data test).
+- Jumlah kelas: 12 kelas pada 20 lokasi (960 train / 240 test);
+                11 kelas pada 5 lokasi aktif L001-L005 (240 train / 60 test).
 - Status      : DUMMY / PROTOTIPE (bukan label lapangan resmi Dinas Pertanian).
 
 

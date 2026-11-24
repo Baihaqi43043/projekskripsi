@@ -7,6 +7,9 @@ data:
   processed_dir: "data/processed"
   start_date: "20200101"
   end_date: "20251231"
+  # Lokasi yang DIPAKAI pipeline training (data/raw tetap berisi semua 20 lokasi).
+  # Sementara 5 lokasi (sama dengan split BiLSTM di data/raw/lstm/). Hapus/kosongkan untuk memakai semua.
+  active_location_ids: ["L001", "L002", "L003", "L004", "L005"]
   # 20 titik pengamatan (kecamatan) di Kabupaten Aceh Utara sesuai Bagian 3.7 PDF
   locations:
     - id: "L001"
