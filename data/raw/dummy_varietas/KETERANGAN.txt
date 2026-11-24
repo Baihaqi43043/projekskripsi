@@ -5,9 +5,10 @@ STATUS: DUMMY. Skor dan hasil panen dihitung dari rumus berbasis asumsi agronomi
 BUKAN data lapangan. Wajib divalidasi pakar sebelum dipakai sebagai dasar klaim penelitian.
 
 ISI
-- 5 lokasi (L001-L005) x 60 bulan tanam (Jan 2021 - Des 2025) x 25 varietas = 7.500 baris
-- kecocokan_varietas_train.csv : bulan tanam Jan 2021 - Des 2024 (6.000 baris, 80%)
-- kecocokan_varietas_test.csv  : bulan tanam Jan 2025 - Des 2025 (1.500 baris, 20%)
+- 20 lokasi (L001-L020) x 60 bulan tanam (Jan 2021 - Des 2025) x 25 varietas = 30.000 baris
+  (lokasi mengikuti active_location_ids di configs/model_config.yaml; kosong = semua)
+- kecocokan_varietas_train.csv : bulan tanam Jan 2021 - Des 2024 (24.000 baris, 80%)
+- kecocokan_varietas_test.csv  : bulan tanam Jan 2025 - Des 2025 (6.000 baris, 20%)
 - kecocokan_varietas_semua.csv : gabungan keduanya (kolom `split` = train/test)
 
 SATU BARIS = satu varietas ditanam di satu lokasi pada satu bulan tanam.
@@ -38,8 +39,13 @@ Asumsi optimum (lihat konstanta di awal buat_data_dummy_varietas.py):
 - Risiko hama tinggi menurunkan kecocokan varietas yang ketahanan hamanya rendah
 
 CATATAN PEMAKAIAN
-- Padi paling sering jadi varietas terbaik (281 dari 300 lokasi-bulan) karena Aceh Utara basah dan pH tanahnya
-  5,0-5,6 (di bawah optimum kedelai). Kedelai tidak pernah jadi yang terbaik.
+- Padi paling sering jadi varietas terbaik (1.123 dari 1.200 lokasi-bulan), jagung 75, kedelai 2, karena
+  Aceh Utara basah dan pH tanahnya 4,95-5,7 (di bawah optimum kedelai).
 - Varietas padi dengan kebutuhan air sama punya skor sangat mirip, sehingga peringkat 1 di antara mereka
-  sering ditentukan noise (berganti di 80% bulan berurutan). Evaluasi model sebaiknya memakai
+  sering ditentukan noise (berganti di 78% bulan berurutan). Evaluasi model sebaiknya memakai
   skor_kecocokan (regresi) dan metrik peringkat (Top-3), bukan hanya ketepatan peringkat 1.
+- Masa tanam yang mencakup November 2025 (hujan 782-801 mm, jauh di atas maksimum 2020-2024 = 493 mm)
+  membuat skor banyak varietas mendekati 0. Kejadian ini tidak bisa diramal dari 12 bulan sebelumnya,
+  sehingga evaluasi model sebaiknya juga dilaporkan tanpa bulan tanam tersebut.
+- Data iklim NASA POWER untuk 20 kecamatan hanya berisi 2 seri unik (2 kotak grid), sehingga lokasi
+  dalam satu kotak grid hanya berbeda pada data tanahnya.

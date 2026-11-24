@@ -1,0 +1,4 @@
+model,LSTM (32),Rata-rata iklim (6),Tanah (9),Varietas (8),Musim (2)
+Hybrid (LSTM + tanah + varietas),0.3794,0.0,0.0484,0.4825,0.0897
+RF saja (rata-rata iklim + tanah + varietas),0.0,0.2727,0.0522,0.4593,0.2158
+Tanpa iklim (tanah + varietas),0.0,0.0,0.1013,0.5822,0.3165

@@ -1,0 +1,68 @@
+{
+  "iqr_lower": {
+    "curah_hujan": -64.93,
+    "suhu_rata_rata": 21.3231,
+    "suhu_maksimal": 25.2635,
+    "suhu_minimum": 17.9677,
+    "kelembaban_rata_rata": 72.9685,
+    "lama_penyinaran": 11.3305
+  },
+  "iqr_upper": {
+    "curah_hujan": 431.39,
+    "suhu_rata_rata": 30.7,
+    "suhu_maksimal": 32.0377,
+    "suhu_minimum": 29.6924,
+    "kelembaban_rata_rata": 93.8937,
+    "lama_penyinaran": 22.1627
+  },
+  "n_outliers_capped": 61,
+  "zscore_mean": {
+    "curah_hujan": 196.086,
+    "suhu_rata_rata": 26.0776,
+    "suhu_maksimal": 28.6433,
+    "suhu_minimum": 24.0696,
+    "kelembaban_rata_rata": 83.8097,
+    "lama_penyinaran": 16.846
+  },
+  "zscore_std": {
+    "curah_hujan": 100.3034,
+    "suhu_rata_rata": 1.375,
+    "suhu_maksimal": 1.0882,
+    "suhu_minimum": 1.6385,
+    "kelembaban_rata_rata": 3.3371,
+    "lama_penyinaran": 2.0365
+  },
+  "sequence_length": 12,
+  "input_cols": [
+    "curah_hujan",
+    "suhu_rata_rata",
+    "suhu_maksimal",
+    "suhu_minimum",
+    "kelembaban_rata_rata",
+    "lama_penyinaran",
+    "bulan_sin",
+    "bulan_cos"
+  ],
+  "locations": [
+    "L001",
+    "L002",
+    "L003",
+    "L004",
+    "L005",
+    "L006",
+    "L007",
+    "L008",
+    "L009",
+    "L010",
+    "L011",
+    "L012",
+    "L013",
+    "L014",
+    "L015",
+    "L016",
+    "L017",
+    "L018",
+    "L019",
+    "L020"
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "run_id": "20261125_004642",
+  "timestamp": "2026-11-25 00:46:42",
+  "git": {
+    "commit": "7183299",
+    "branch": "pipeline-proposal",
+    "dirty": true
+  },
+  "stage": "Baseline_RF_Proposal",
+  "environment": "local",
+  "dataset": {
+    "train_samples": 960,
+    "test_samples": 240,
+    "num_classes": 12
+  },
+  "hyperparameters": {
+    "rf_search": {
+      "n_estimators": [
+        100,
+        200,
+        300,
+        500
+      ],
+      "max_depth": [
+        null,
+        10,
+        15,
+        20,
+        30
+      ],
+      "min_samples_split": [
+        2,
+        5,
+        10
+      ],
+      "min_samples_leaf": [
+        1,
+        2,
+        4
+      ],
+      "max_features": [
+        "sqrt",
+        "log2",
+        0.5
+      ],
+      "class_weight": [
+        null,
+        "balanced",
+        "balanced_subsample"
+      ]
+    },
+    "cv_val_years": [
+      2023,
+      2024
+    ]
+  },
+  "loss_akhir": null,
+  "metrics": {
+    "accuracy": 0.3133,
+    "precision_weighted": 0.2147,
+    "recall_weighted": 0.3133,
+    "f1_weighted": 0.2429,
+    "precision_macro": 0.218,
+    "recall_macro": 0.3086,
+    "f1_macro": 0.2412,
+    "top_3_accuracy": 0.6759,
+    "top_5_accuracy": 0.9992
+  },
+  "top_features": [],
+  "duration_sec": 29.83,
+  "catatan": "Pipeline proposal, RF saja, rata-rata 5 seed: accuracy=0.313±0.016, f1_weighted=0.243±0.016, f1_macro=0.241±0.032, top_3_accuracy=0.676±0.014"
+}

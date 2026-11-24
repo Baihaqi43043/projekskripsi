@@ -1,0 +1,4 @@
+model,accuracy_mean,accuracy_std,precision_weighted_mean,precision_weighted_std,recall_weighted_mean,recall_weighted_std,f1_weighted_mean,f1_weighted_std,precision_macro_mean,precision_macro_std,recall_macro_mean,recall_macro_std,f1_macro_mean,f1_macro_std,top_3_accuracy_mean,top_3_accuracy_std,top_5_accuracy_mean,top_5_accuracy_std
+Hybrid LSTM + RF,0.3667,0.0327,0.461,0.0441,0.3667,0.0327,0.3884,0.0225,0.359,0.0306,0.3523,0.0231,0.332,0.0167,0.7883,0.0532,0.9175,0.0285
+LSTM saja (sekuens iklim),0.345,0.0336,0.2037,0.0243,0.345,0.0336,0.2463,0.0276,0.0964,0.021,0.1821,0.03,0.1193,0.0254,0.545,0.0338,0.6742,0.0322
+Random Forest saja (statis + rata-rata iklim),0.3133,0.0165,0.2147,0.0273,0.3133,0.0165,0.2429,0.0159,0.218,0.0365,0.3086,0.0479,0.2412,0.0318,0.6759,0.0136,0.9992,0.0019
