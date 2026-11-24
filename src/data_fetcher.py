@@ -194,15 +194,37 @@ def fetch_hf_crop_recommendation(save_path: str = "data/raw/hf_crop_recommendati
     return df
 
 
-def collect_aceh_utara_sample(config: dict[str, Any]) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Ambil data agroklimat (NASA POWER) & tanah (SoilGrids + dummy N/P/K/drainase/risiko) untuk semua titik."""
+DAILY_CSV = "aceh_utara_agroklimat_harian.csv"
+MONTHLY_CSV = "aceh_utara_agroklimat_bulanan.csv"
+SOIL_CSV = "aceh_utara_tanah_statis.csv"
+
+
+def _dummy_soil_full(loc_id: str, lat: float, lon: float) -> dict[str, Any]:
+    """Fallback tanah dummy penuh (pH/tekstur/C-organik ikut dummy). Hanya dipakai bila diminta eksplisit."""
+    seed_int = int(hashlib.md5(loc_id.encode("utf-8")).hexdigest()[:8], 16)
+    rng = random.Random(seed_int + 7)
+    extras = _dummy_soil_extras(loc_id)
+    return {
+        "id_lokasi": loc_id,
+        "lintang": lat,
+        "bujur": lon,
+        "tekstur_tanah": rng.choice(["Lanau", "Lempung", "Pasir"]),
+        "ph_tanah": round(rng.uniform(5.0, 6.6), 2),
+        "nitrogen": extras["nitrogen"],
+        "fosfor": extras["fosfor"],
+        "kalium": extras["kalium"],
+        "karbon_organik": round(rng.uniform(2.5, 5.2), 2),
+        "drainase": extras["drainase"],
+        "risiko_bencana_hama": extras["risiko_bencana_hama"],
+    }
+
+
+def collect_climate(config: dict[str, Any]) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Ambil agroklimat harian NASA POWER semua titik, simpan versi harian & bulanan ke data/raw/."""
     raw_dir = config["data"]["raw_dir"]
     os.makedirs(raw_dir, exist_ok=True)
 
-    daily_frames = []
-    climate_frames = []
-    soil_records = []
-
+    daily_frames, monthly_frames = [], []
     for loc in config["data"]["locations"]:
         loc_id = loc["id"]
         print(f"Mengambil data NASA POWER untuk {loc_id} ({loc['name']})...")
@@ -213,48 +235,67 @@ def collect_aceh_utara_sample(config: dict[str, Any]) -> tuple[pd.DataFrame, pd.
             end_date=config["data"]["end_date"],
             id_lokasi=loc_id,
         )
+        d_df["nama_lokasi"] = loc["name"]
         daily_frames.append(d_df)
-        climate_frames.append(aggregate_daily_to_monthly(d_df, id_lokasi=loc_id))
+        monthly_frames.append(aggregate_daily_to_monthly(d_df, id_lokasi=loc_id))
 
-        s_rec = None
-        for attempt in range(1, 4):
+    daily_df = pd.concat(daily_frames, ignore_index=True)
+    monthly_df = pd.concat(monthly_frames, ignore_index=True)
+    daily_df.to_csv(os.path.join(raw_dir, DAILY_CSV), index=False)
+    monthly_df.to_csv(os.path.join(raw_dir, MONTHLY_CSV), index=False)
+    return daily_df, monthly_df
+
+
+def collect_soil(config: dict[str, Any], allow_dummy: bool = False, retries: int = 3) -> pd.DataFrame:
+    """Ambil data tanah SoilGrids semua titik dan simpan ke data/raw/.
+
+    Jika SoilGrids gagal untuk suatu lokasi, fungsi ini BERHENTI dengan error (default),
+    supaya data tanah tidak diam-diam tergantikan nilai dummy acak. Set `allow_dummy=True`
+    hanya untuk uji coba pipeline; lokasi yang memakai dummy ditandai di kolom `sumber_tanah`.
+    """
+    raw_dir = config["data"]["raw_dir"]
+    os.makedirs(raw_dir, exist_ok=True)
+
+    soil_records = []
+    for loc in config["data"]["locations"]:
+        loc_id = loc["id"]
+        s_rec, last_exc = None, None
+        for attempt in range(1, retries + 1):
             try:
                 print(f"Mengambil data SoilGrids untuk {loc_id} ({loc['name']}) [percobaan {attempt}]...")
                 s_rec = fetch_soilgrids_point(lat=loc["lat"], lon=loc["lon"], id_lokasi=loc_id)
+                s_rec["sumber_tanah"] = "SoilGrids"
                 break
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - laporkan apa pun penyebabnya
+                last_exc = exc
                 print(f"  [Info] SoilGrids gagal percobaan {attempt} untuk {loc_id}: {exc}")
                 time.sleep(1)
 
         if s_rec is None:
-            print(f"  [Info] Memakai fallback tanah dummy untuk {loc_id}.")
-            seed_int = int(hashlib.md5(loc_id.encode("utf-8")).hexdigest()[:8], 16)
-            rng = random.Random(seed_int + 7)
-            extras = _dummy_soil_extras(loc_id)
-            s_rec = {
-                "id_lokasi": loc_id,
-                "lintang": loc["lat"],
-                "bujur": loc["lon"],
-                "tekstur_tanah": rng.choice(["Lanau", "Lempung", "Pasir"]),
-                "ph_tanah": round(rng.uniform(5.0, 6.6), 2),
-                "nitrogen": extras["nitrogen"],
-                "fosfor": extras["fosfor"],
-                "kalium": extras["kalium"],
-                "karbon_organik": round(rng.uniform(2.5, 5.2), 2),
-                "drainase": extras["drainase"],
-                "risiko_bencana_hama": extras["risiko_bencana_hama"],
-            }
+            if not allow_dummy:
+                raise RuntimeError(
+                    f"SoilGrids gagal untuk {loc_id} setelah {retries} percobaan ({last_exc}). "
+                    "Coba lagi nanti, atau jalankan `python fetch_data.py --only soil --allow-dummy-soil` "
+                    "jika memang hanya ingin menguji pipeline dengan data tanah dummy."
+                )
+            print(f"  [PERINGATAN] Memakai tanah DUMMY untuk {loc_id} (pH/tekstur/C-organik bukan data riil).")
+            s_rec = _dummy_soil_full(loc_id, loc["lat"], loc["lon"])
+            s_rec["sumber_tanah"] = "DUMMY"
         time.sleep(1)
 
         s_rec["nama_lokasi"] = loc["name"]
         s_rec["ketinggian_tempat"] = loc.get("ketinggian_tempat", 5.0)
         soil_records.append(s_rec)
 
-    daily_df = pd.concat(daily_frames, ignore_index=True)
-    climate_df = pd.concat(climate_frames, ignore_index=True)
     soil_df = pd.DataFrame(soil_records)
+    soil_df.to_csv(os.path.join(raw_dir, SOIL_CSV), index=False)
+    return soil_df
 
-    daily_df.to_csv(os.path.join(raw_dir, "aceh_utara_agroklimat_harian.csv"), index=False)
-    climate_df.to_csv(os.path.join(raw_dir, "aceh_utara_agroklimat_bulanan.csv"), index=False)
-    soil_df.to_csv(os.path.join(raw_dir, "aceh_utara_tanah_statis.csv"), index=False)
-    return climate_df, soil_df
+
+def collect_aceh_utara_sample(
+    config: dict[str, Any], allow_dummy_soil: bool = False
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Ambil agroklimat (NASA POWER) & tanah (SoilGrids + dummy N/P/K/drainase/risiko) untuk semua titik."""
+    _, monthly_df = collect_climate(config)
+    soil_df = collect_soil(config, allow_dummy=allow_dummy_soil)
+    return monthly_df, soil_df

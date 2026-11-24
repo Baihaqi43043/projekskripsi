@@ -10,7 +10,6 @@ import pandas as pd
 import yaml
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 
-from src.data_fetcher import collect_aceh_utara_sample
 from src.preprocessing import build_sequences_and_static, encode_static_categories
 
 
@@ -80,17 +79,24 @@ def prepare_shared_dataset(cfg: dict[str, Any]) -> dict[str, Any]:
     soil_path = os.path.join(raw_dir, "aceh_utara_tanah_statis.csv")
     expected_locs = len(cfg["data"]["locations"])
 
-    if os.path.exists(climate_path) and os.path.exists(soil_path):
-        climate_df = pd.read_csv(climate_path)
-        soil_df = pd.read_csv(soil_path)
-        if len(soil_df) == expected_locs:
-            print(f"Memuat dataset Aceh Utara ({expected_locs} lokasi) dari data/raw/...")
-        else:
-            print(f"Jumlah lokasi berubah ({len(soil_df)} -> {expected_locs}), mengambil ulang data...")
-            climate_df, soil_df = collect_aceh_utara_sample(cfg)
-    else:
-        print(f"Mengambil data agroklimat & tanah untuk {expected_locs} lokasi Aceh Utara...")
-        climate_df, soil_df = collect_aceh_utara_sample(cfg)
+    missing = [p for p in (climate_path, soil_path) if not os.path.exists(p)]
+    if missing:
+        raise FileNotFoundError(
+            f"File data belum ada: {', '.join(missing)}. "
+            "Jalankan `python fetch_data.py` (atau `--only soil` untuk data tanah saja) terlebih dahulu."
+        )
+
+    climate_df = pd.read_csv(climate_path)
+    soil_df = pd.read_csv(soil_path)
+    if len(soil_df) != expected_locs:
+        raise ValueError(
+            f"Data tanah berisi {len(soil_df)} lokasi, sedangkan config berisi {expected_locs} lokasi. "
+            "Jalankan ulang `python fetch_data.py` agar data sinkron dengan configs/model_config.yaml."
+        )
+    if "sumber_tanah" in soil_df.columns and (soil_df["sumber_tanah"] == "DUMMY").any():
+        dummy_locs = soil_df.loc[soil_df["sumber_tanah"] == "DUMMY", "id_lokasi"].tolist()
+        print(f"[PERINGATAN] Data tanah lokasi {dummy_locs} masih DUMMY penuh (bukan SoilGrids).")
+    print(f"Memuat dataset Aceh Utara ({expected_locs} lokasi) dari data/raw/...")
 
     climate_df = beri_label_varietas_prototipe(climate_df, soil_df)
 

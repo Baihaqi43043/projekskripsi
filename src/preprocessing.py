@@ -104,11 +104,18 @@ def split_daily_climate_dataset(
     train_start_year: int = 2020,
     train_end_year: int = 2024,
     test_year: int = 2025,
+    location_ids: list[str] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Pisahkan dataset agroklimat harian menjadi folder training (2020-2024) dan testing (2025)."""
+    """Pisahkan dataset agroklimat harian menjadi `training/training.csv` (2020-2024) dan `testing/testing.csv` (2025).
+
+    Split yang ada di repo saat ini hanya berisi 5 lokasi (L001-L005) karena model BiLSTM cuaca
+    dilatih dengan one-hot 5 lokasi. Isi `location_ids` agar split baru tetap konsisten.
+    """
     import os
 
     df = pd.read_csv(input_csv)
+    if location_ids is not None:
+        df = df[df["id_lokasi"].isin(location_ids)]
     train_df = df[(df["tahun"] >= train_start_year) & (df["tahun"] <= train_end_year)].copy()
     test_df = df[df["tahun"] == test_year].copy()
 
@@ -117,9 +124,8 @@ def split_daily_climate_dataset(
     os.makedirs(training_dir, exist_ok=True)
     os.makedirs(testing_dir, exist_ok=True)
 
-    filename = os.path.basename(input_csv)
-    train_df.to_csv(os.path.join(training_dir, filename), index=False)
-    test_df.to_csv(os.path.join(testing_dir, filename), index=False)
+    train_df.to_csv(os.path.join(training_dir, "training.csv"), index=False)
+    test_df.to_csv(os.path.join(testing_dir, "testing.csv"), index=False)
 
     return train_df, test_df
 

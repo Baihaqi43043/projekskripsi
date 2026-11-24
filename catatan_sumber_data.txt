@@ -13,9 +13,14 @@ A. data/raw/aceh_utara_agroklimat_harian.csv
                    suhu_rata_rata, suhu_maksimal, suhu_minimum,
                    kelembaban_rata_rata, lama_penyinaran.
    - Status      : DATA RIIL (100% terisi dari NASA POWER API untuk 20 kecamatan).
+                   Diunduh ulang 24 Nov 2026 via `python fetch_data.py --only climate`;
+                   nilainya identik dengan split 5 lokasi lama (selisih 0,0000 di semua kolom).
    - Split LSTM (data/raw/lstm/):
-     * Catatan   : Folder split harian lama (5 lokasi) dari branch develop_rahmat
-                   masih ada di data/raw/lstm/ (9.135 train / 1.825 test).
+     * training/training.csv : 5 lokasi (L001-L005), 2020-2024, 9.135 baris
+     * testing/testing.csv   : 5 lokasi (L001-L005), 2025, 1.825 baris
+     * Dipakai BiLSTM cuaca (notebook, train_bilstm_weather.py, dashboard).
+       Folder duplikat `train/` dan salinan `aceh_utara_agroklimat_harian.csv` di dalamnya dihapus.
+   - Satuan lama_penyinaran: ALLSKY_SFC_SW_DWN = radiasi (MJ/m2/hari), BUKAN jam/hari.
 
 B. data/raw/aceh_utara_agroklimat_bulanan.csv
    - Jumlah data : 1.440 baris (20 lokasi x 72 bulan, periode Jan 2020 - Des 2025)
@@ -32,6 +37,10 @@ B. data/raw/aceh_utara_agroklimat_bulanan.csv
    - Status      : DATA RIIL (100% terisi dari NASA POWER API untuk 20 kecamatan).
 
 C. data/raw/aceh_utara_tanah_statis.csv
+   - STATUS FILE : BELUM ADA DI REPO (24 Nov 2026). File lama tidak pernah di-commit dan API
+                   SoilGrids sedang tidak merespons. Salin file asli ke data/raw/ atau jalankan
+                   `python fetch_data.py --only soil` saat SoilGrids aktif. Kolom baru
+                   `sumber_tanah` (SoilGrids/DUMMY) menandai asal data per lokasi.
    - Jumlah data : 20 baris (20 kecamatan di Kabupaten Aceh Utara: L001 - L020)
      Lhoksukon, Matangkuli, Syamtalira Aron, Dewantara, Kuta Makmur, Muara Batu,
      Samudera, Tanah Luas, Nibong, Syamtalira Bayu, Meurah Mulia, Tanah Pasir,
@@ -48,6 +57,8 @@ C. data/raw/aceh_utara_tanah_statis.csv
                                 untuk menggantikan data lab/Dinas yang belum ada.
 
 D. data/raw/varietas_tanaman.csv
+   - STATUS FILE : BELUM ADA DI REPO dan tidak dibuat oleh script mana pun. Belum dipakai kode;
+                   perlu disalin dari laptop yang menyusunnya.
    - Jumlah data : 25 baris (25 varietas Padi, Jagung, dan Kedelai).
    - Kolom       : id_varietas, nama_varietas, komoditas, umur_panen_hari,
                    potensi_hasil_ton_ha, ketahanan_hama_skala (1-5),

@@ -2,25 +2,23 @@
 
 from __future__ import annotations
 
-import os
-import sys
-
-venv_site = os.path.join(os.path.dirname(__file__), ".venv", "Lib", "site-packages")
-if os.path.exists(venv_site) and venv_site not in sys.path:
-    sys.path.append(venv_site)
-
 import numpy as np
 import pandas as pd
 import torch
 from fastapi import FastAPI, Query
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from predict_production_2025 import (
-    ENGINEERED_COLS,
+from src.weather_model import (
+    DEFAULT_MODEL_PATH,
+    DEFAULT_TEST_CSV,
+    DEFAULT_TRAIN_CSV,
     FEATURES,
-    WeatherLSTM,
-    add_engineered_features,
-    robust_fit,
+    get_preprocessing,
+    input_feature_names,
+    inverse_targets,
+    load_daily_csv,
+    load_weather_model,
+    transform_inputs,
 )
 
 app = FastAPI(title="Prediksi Cuaca Agroklimat Aceh Utara - BiLSTM")
@@ -36,57 +34,23 @@ TOLERANCES = {
 
 # Preload model dan dataset sekali saat server menyala agar inference cepat (< 50 ms)
 def _init_engine():
-    df_train = pd.read_csv("data/raw/lstm/training/training.csv").sort_values(["id_lokasi", "tanggal"]).reset_index(drop=True)
-    df_test = pd.read_csv("data/raw/lstm/testing/testing.csv").sort_values(["id_lokasi", "tanggal"]).reset_index(drop=True)
-
-    bounds = {}
-    for col in FEATURES:
-        lb = 0.0 if col == "curah_hujan" else float(df_train[col].quantile(0.01))
-        ub = float(df_train[col].quantile(0.98 if col == "curah_hujan" else 0.99))
-        bounds[col] = (lb, ub)
+    df_train = load_daily_csv(DEFAULT_TRAIN_CSV)
+    df_test = load_daily_csv(DEFAULT_TEST_CSV)
+    prep = get_preprocessing(DEFAULT_MODEL_PATH, DEFAULT_TRAIN_CSV)
 
     df_tail_2024 = df_train[df_train["tanggal"] >= "2024-12-01"].copy()
     df_full_raw = pd.concat([df_tail_2024, df_test], ignore_index=True).sort_values(["id_lokasi", "tanggal"]).reset_index(drop=True)
-
-    df_tr_proc = df_train.copy()
-    df_full_proc = df_full_raw.copy()
-    for col, (lb, ub) in bounds.items():
-        df_tr_proc[col] = df_tr_proc[col].clip(lower=lb, upper=ub)
-        df_full_proc[col] = df_full_proc[col].clip(lower=lb, upper=ub)
-
-    df_tr_proc["curah_hujan"] = np.log1p(df_tr_proc["curah_hujan"])
-    df_full_proc["curah_hujan"] = np.log1p(df_full_proc["curah_hujan"])
-
-    df_tr_proc = add_engineered_features(df_tr_proc)
-    df_full_proc = add_engineered_features(df_full_proc)
-
-    loc_cols = sorted(df_tr_proc["id_lokasi"].unique())
+    df_full_scaled = transform_inputs(df_full_raw, prep)
     loc_names = df_test.groupby("id_lokasi")["nama_lokasi"].first().to_dict()
-    for loc in loc_cols:
-        df_tr_proc[f"loc_{loc}"] = (df_tr_proc["id_lokasi"] == loc).astype(np.float32)
-        df_full_proc[f"loc_{loc}"] = (df_full_proc["id_lokasi"] == loc).astype(np.float32)
-
-    scale_in_cols = FEATURES + ENGINEERED_COLS
-    in_med, in_iqr = robust_fit(df_tr_proc[scale_in_cols].to_numpy(dtype=np.float32))
-    tgt_med, tgt_iqr = robust_fit(df_tr_proc[FEATURES].to_numpy(dtype=np.float32))
-
-    df_full_scaled = df_full_proc.copy()
-    df_full_scaled[scale_in_cols] = (df_full_proc[scale_in_cols].to_numpy(dtype=np.float32) - in_med) / in_iqr
-    input_features = FEATURES + ENGINEERED_COLS + [f"loc_{loc}" for loc in loc_cols]
-
-    device = torch.device("cpu")
-    model = WeatherLSTM(input_dim=len(input_features), output_dim=len(FEATURES)).to(device)
-    model.load_state_dict(torch.load("models/best_lstm_weather.pth", map_location=device))
-    model.eval()
 
     return {
-        "model": model,
-        "bounds": bounds,
-        "tgt_med": tgt_med,
-        "tgt_iqr": tgt_iqr,
+        "model": load_weather_model(DEFAULT_MODEL_PATH, prep, device="cpu"),
+        "prep": prep,
+        "bounds": prep["bounds"],
+        "window_size": prep["window_size"],
         "df_full_raw": df_full_raw,
         "df_full_scaled": df_full_scaled,
-        "input_features": input_features,
+        "input_features": input_feature_names(prep),
         "loc_names": loc_names,
     }
 
@@ -100,7 +64,7 @@ def predict_weather(
     start_date: str = Query("2025-01-01", description="Tanggal mulai YYYY-MM-DD"),
     end_date: str = Query("2025-03-31", description="Tanggal akhir YYYY-MM-DD"),
 ):
-    window_size = 21
+    window_size = ENGINE["window_size"]
     df_scaled = ENGINE["df_full_scaled"]
     df_raw = ENGINE["df_full_raw"]
 
@@ -127,8 +91,7 @@ def predict_weather(
     with torch.no_grad():
         preds_scaled = ENGINE["model"](torch.tensor(np.array(x_seqs), dtype=torch.float32)).numpy()
 
-    preds_unscaled = preds_scaled * ENGINE["tgt_iqr"] + ENGINE["tgt_med"]
-    preds_unscaled[:, 0] = np.expm1(np.clip(preds_unscaled[:, 0], 0.0, None))
+    preds_unscaled = inverse_targets(preds_scaled, ENGINE["prep"])
 
     dates = []
     series = {col: {"aktual": [], "prediksi": []} for col in FEATURES}

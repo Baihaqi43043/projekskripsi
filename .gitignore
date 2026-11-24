@@ -3,11 +3,12 @@ __pycache__/
 *.pyc
 *.pyo
 .DS_Store
-data/raw/*.csv
-data/raw/*.parquet
-data/processed/*.npz
-data/processed/*.csv
+
+# Data mentah (data/raw/) IKUT di-commit agar hasil bisa direproduksi.
+# Yang di-ignore hanya turunan yang bisa dibuat ulang dari script:
+data/processed/
+
+# Bobot model (dibagikan lewat Google Drive / rilis, bukan Git)
 models/
 mlruns/
 .cache/
-

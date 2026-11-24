@@ -117,6 +117,8 @@ data:
     - "suhu_maksimal"
     - "suhu_minimum"
     - "kelembaban_rata_rata"
+    # PERHATIAN SATUAN: dari NASA POWER ALLSKY_SFC_SW_DWN = radiasi matahari (MJ/m2/hari),
+    # BUKAN lama penyinaran (jam/hari) seperti Tabel 3.1 proposal. Ganti bila data BMKG tersedia.
     - "lama_penyinaran"
 
   # Tabel 3.2 PDF: Data Kondisi Tanah dan Lingkungan (Statis)

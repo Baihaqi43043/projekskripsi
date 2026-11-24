@@ -3,150 +3,47 @@
 from __future__ import annotations
 
 import os
-import sys
-
-# Izinkan akses ke pandas di .venv jika dijalankan dengan Python global yang punya torch
-venv_site = os.path.join(os.path.dirname(__file__), ".venv", "Lib", "site-packages")
-if os.path.exists(venv_site) and venv_site not in sys.path:
-    sys.path.append(venv_site)
 
 import numpy as np
 import pandas as pd
 import torch
-import torch.nn as nn
 
-FEATURES = [
-    "curah_hujan",
-    "suhu_rata_rata",
-    "suhu_maksimal",
-    "suhu_minimum",
-    "kelembaban_rata_rata",
-    "lama_penyinaran",
-]
-ENGINEERED_COLS = [
-    "rentang_suhu",
-    "doy_sin",
-    "doy_cos",
-    "roll_hujan_7d",
-    "roll_lembab_7d",
-    "roll_sinar_7d",
-]
-
-
-class WeatherLSTM(nn.Module):
-    """Arsitektur BiLSTM + LayerNorm + Temporal Attention (sesuai Run 20261121_123724)."""
-
-    def __init__(
-        self,
-        input_dim: int,
-        hidden_1: int = 128,
-        hidden_2: int = 64,
-        embedding_dim: int = 32,
-        output_dim: int = 6,
-        dropout: float = 0.25,
-    ) -> None:
-        super().__init__()
-        self.lstm1 = nn.LSTM(input_size=input_dim, hidden_size=hidden_1, batch_first=True, bidirectional=True)
-        self.norm1 = nn.LayerNorm(hidden_1 * 2)
-        self.dropout1 = nn.Dropout(dropout)
-
-        self.lstm2 = nn.LSTM(input_size=hidden_1 * 2, hidden_size=hidden_2, batch_first=True, bidirectional=True)
-        self.norm2 = nn.LayerNorm(hidden_2 * 2)
-        self.dropout2 = nn.Dropout(dropout)
-
-        self.attn_fc = nn.Linear(hidden_2 * 2, 1)
-        self.fc_embed = nn.Linear(hidden_2 * 4, embedding_dim)
-        self.relu = nn.ReLU()
-        self.out_layer = nn.Linear(embedding_dim, output_dim)
-
-    def extract_embedding(self, x: torch.Tensor) -> torch.Tensor:
-        out, _ = self.lstm1(x)
-        out = self.dropout1(self.norm1(out))
-        out, _ = self.lstm2(out)
-        out = self.dropout2(self.norm2(out))
-        attn_weights = torch.softmax(self.attn_fc(out), dim=1)
-        context = torch.sum(attn_weights * out, dim=1)
-        last_step = out[:, -1, :]
-        combined = torch.cat([last_step, context], dim=1)
-        return self.relu(self.fc_embed(combined))
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.out_layer(self.extract_embedding(x))
-
-
-def robust_fit(arr: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    median = np.median(arr, axis=0)
-    q75, q25 = np.percentile(arr, [75, 25], axis=0)
-    iqr = np.where((q75 - q25) == 0, 1.0, q75 - q25)
-    return median, iqr
-
-
-def add_engineered_features(df_in: pd.DataFrame) -> pd.DataFrame:
-    out = df_in.copy()
-    out["rentang_suhu"] = out["suhu_maksimal"] - out["suhu_minimum"]
-    dt = pd.to_datetime(out["tanggal"])
-    doy = dt.dt.day_of_year
-    out["doy_sin"] = np.sin(2 * np.pi * doy / 365.25)
-    out["doy_cos"] = np.cos(2 * np.pi * doy / 365.25)
-    out = out.sort_values(["id_lokasi", "tanggal"]).reset_index(drop=True)
-    out["roll_hujan_7d"] = out.groupby("id_lokasi")["curah_hujan"].transform(lambda s: s.rolling(7, min_periods=1).mean())
-    out["roll_lembab_7d"] = out.groupby("id_lokasi")["kelembaban_rata_rata"].transform(lambda s: s.rolling(7, min_periods=1).mean())
-    out["roll_sinar_7d"] = out.groupby("id_lokasi")["lama_penyinaran"].transform(lambda s: s.rolling(7, min_periods=1).mean())
-    return out
+from src.weather_model import (
+    DEFAULT_MODEL_PATH,
+    DEFAULT_TEST_CSV,
+    DEFAULT_TRAIN_CSV,
+    FEATURES,
+    get_preprocessing,
+    input_feature_names,
+    inverse_targets,
+    load_daily_csv,
+    load_weather_model,
+    transform_inputs,
+)
 
 
 def main() -> None:
-    train_path = "data/raw/lstm/training/training.csv"
-    test_path = "data/raw/lstm/testing/testing.csv"
-    model_path = "models/best_lstm_weather.pth"
+    model_path = DEFAULT_MODEL_PATH
+    df_train = load_daily_csv(DEFAULT_TRAIN_CSV)
+    df_test = load_daily_csv(DEFAULT_TEST_CSV)
 
-    df_train = pd.read_csv(train_path).sort_values(["id_lokasi", "tanggal"]).reset_index(drop=True)
-    df_test = pd.read_csv(test_path).sort_values(["id_lokasi", "tanggal"]).reset_index(drop=True)
-
-    # Batas normalisasi anomali dari data train (2020-2024)
-    bounds = {}
-    for col in FEATURES:
-        lb = 0.0 if col == "curah_hujan" else float(df_train[col].quantile(0.01))
-        ub = float(df_train[col].quantile(0.98 if col == "curah_hujan" else 0.99))
-        bounds[col] = (lb, ub)
+    # Statistik preprocessing (batas winsorizing, median/IQR) dari saat training model
+    prep = get_preprocessing(model_path, DEFAULT_TRAIN_CSV)
+    bounds = prep["bounds"]
+    window_size = prep["window_size"]
 
     # Gabungkan 21 hari terakhir 2024 + 90 hari pertama 2025 (Jan-Mar 2025) untuk simulasi production
-    window_size = 21
     df_tail_2024 = df_train[df_train["tanggal"] >= "2024-12-11"].copy()
     df_q1_2025 = df_test[(df_test["tanggal"] >= "2025-01-01") & (df_test["tanggal"] <= "2025-03-31")].copy()
     df_prod_raw = pd.concat([df_tail_2024, df_q1_2025], ignore_index=True)
 
     # Preprocessing identik dengan pipeline training
-    df_tr_proc = df_train.copy()
-    df_prod_proc = df_prod_raw.copy()
-    for col, (lb, ub) in bounds.items():
-        df_tr_proc[col] = df_tr_proc[col].clip(lower=lb, upper=ub)
-        df_prod_proc[col] = df_prod_proc[col].clip(lower=lb, upper=ub)
-
-    df_tr_proc["curah_hujan"] = np.log1p(df_tr_proc["curah_hujan"])
-    df_prod_proc["curah_hujan"] = np.log1p(df_prod_proc["curah_hujan"])
-
-    df_tr_proc = add_engineered_features(df_tr_proc)
-    df_prod_proc = add_engineered_features(df_prod_proc)
-
-    loc_cols = sorted(df_tr_proc["id_lokasi"].unique())
-    for loc in loc_cols:
-        df_tr_proc[f"loc_{loc}"] = (df_tr_proc["id_lokasi"] == loc).astype(np.float32)
-        df_prod_proc[f"loc_{loc}"] = (df_prod_proc["id_lokasi"] == loc).astype(np.float32)
-
-    scale_in_cols = FEATURES + ENGINEERED_COLS
-    in_med, in_iqr = robust_fit(df_tr_proc[scale_in_cols].to_numpy(dtype=np.float32))
-    tgt_med, tgt_iqr = robust_fit(df_tr_proc[FEATURES].to_numpy(dtype=np.float32))
-
-    df_prod_scaled = df_prod_proc.copy()
-    df_prod_scaled[scale_in_cols] = (df_prod_proc[scale_in_cols].to_numpy(dtype=np.float32) - in_med) / in_iqr
-    input_features = FEATURES + ENGINEERED_COLS + [f"loc_{loc}" for loc in loc_cols]
+    df_prod_scaled = transform_inputs(df_prod_raw, prep)
+    input_features = input_feature_names(prep)
+    loc_cols = prep["loc_ids"]
 
     # Load model terlatih (mode production / eval)
-    device = torch.device("cpu")
-    model = WeatherLSTM(input_dim=len(input_features), output_dim=len(FEATURES)).to(device)
-    model.load_state_dict(torch.load(model_path, map_location=device))
-    model.eval()
+    model = load_weather_model(model_path, prep, device="cpu")
 
     rows = []
     for loc_id, grp in df_prod_scaled.groupby("id_lokasi"):
@@ -165,8 +62,7 @@ def main() -> None:
         with torch.no_grad():
             preds_scaled = model(torch.tensor(np.array(x_seqs), dtype=torch.float32)).numpy()
 
-        preds_unscaled = preds_scaled * tgt_iqr + tgt_med
-        preds_unscaled[:, 0] = np.expm1(np.clip(preds_unscaled[:, 0], 0.0, None))
+        preds_unscaled = inverse_targets(preds_scaled, prep)
 
         for k, idx in enumerate(target_indices):
             row = {
