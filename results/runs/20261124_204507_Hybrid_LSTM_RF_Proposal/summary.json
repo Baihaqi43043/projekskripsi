@@ -1,0 +1,131 @@
+{
+  "run_id": "20261124_204507",
+  "timestamp": "2026-11-24 20:45:07",
+  "git": {
+    "commit": "1bc4152",
+    "branch": "pipeline-proposal",
+    "dirty": true
+  },
+  "stage": "Hybrid_LSTM_RF_Proposal",
+  "environment": "local",
+  "dataset": {
+    "train_samples": 240,
+    "test_samples": 60,
+    "num_classes": 11
+  },
+  "hyperparameters": {
+    "lstm": {
+      "hidden_size_1": 128,
+      "hidden_size_2": 64,
+      "embedding_dim": 32,
+      "dropout": 0.2,
+      "epochs": 30,
+      "batch_size": 16,
+      "learning_rate": 0.001
+    },
+    "proposal": {
+      "train_end_year": 2023,
+      "val_year": 2024,
+      "test_year": 2025,
+      "cv_val_years": [
+        2023,
+        2024
+      ],
+      "iqr_factor": 1.5,
+      "seasonal_features": true,
+      "max_epochs": 300,
+      "early_stopping_patience": 20,
+      "rf_search_iter": 20,
+      "seeds": [
+        42,
+        43,
+        44,
+        45,
+        46
+      ]
+    },
+    "rf_search": {
+      "n_estimators": [
+        100,
+        200,
+        300,
+        500
+      ],
+      "max_depth": [
+        null,
+        10,
+        15,
+        20,
+        30
+      ],
+      "min_samples_split": [
+        2,
+        5,
+        10
+      ],
+      "min_samples_leaf": [
+        1,
+        2,
+        4
+      ],
+      "max_features": [
+        "sqrt",
+        "log2",
+        0.5
+      ],
+      "class_weight": [
+        null,
+        "balanced",
+        "balanced_subsample"
+      ]
+    }
+  },
+  "loss_akhir": 0.41622000000000003,
+  "metrics": {
+    "accuracy": 0.3667,
+    "precision_weighted": 0.4755,
+    "recall_weighted": 0.3667,
+    "f1_weighted": 0.4051,
+    "precision_macro": 0.3236,
+    "recall_macro": 0.273,
+    "f1_macro": 0.2877,
+    "top_3_accuracy": 0.8433,
+    "top_5_accuracy": 0.9967
+  },
+  "top_features": [
+    [
+      "ketinggian_tempat",
+      0.0537
+    ],
+    [
+      "fitur_temporal_lstm_8",
+      0.0459
+    ],
+    [
+      "fitur_temporal_lstm_5",
+      0.0458
+    ],
+    [
+      "risiko_bencana_hama",
+      0.0422
+    ],
+    [
+      "fosfor",
+      0.0422
+    ],
+    [
+      "nitrogen",
+      0.042
+    ],
+    [
+      "ph_tanah",
+      0.0413
+    ],
+    [
+      "fitur_temporal_lstm_27",
+      0.0404
+    ]
+  ],
+  "duration_sec": 24.53,
+  "catatan": "Pipeline proposal, rata-rata 5 seed: accuracy=0.367±0.039, f1_weighted=0.405±0.043, f1_macro=0.288±0.033, top_3_accuracy=0.843±0.019"
+}

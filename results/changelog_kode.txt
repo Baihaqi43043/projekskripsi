@@ -1,6 +1,6 @@
 ================================================================================
 LOG PERUBAHAN PARAMETER & DAMPAK TERHADAP AKURASI MODEL
-Diperbarui: 2026-11-21 19:00:10
+Diperbarui: 2026-11-24 20:45:08
 ================================================================================
 MODEL TERBAIK SAAT INI : Hybrid_LSTM_RF (local) | Acc=0.425 | F1=0.4624 | Top-3=0.625
 Parameter Terbaik      : {"n_estimators": 200, "max_depth": 15, "min_samples_split": 2, "min_samples_leaf": 1, "class_weight": "balanced"}
@@ -65,12 +65,33 @@ Parameter Terbaik      : {"n_estimators": 200, "max_depth": 15, "min_samples_spl
     Perubahan Param : features: ['curah_hujan', 'suhu_rata_rata', 'suhu_maksimal', 'suhu_minimum', 'kelembaban_rata_rata', 'lama_penyinaran'] -> ['curah_hujan', 'suhu_rata_rata', 'suhu_maksimal', 'suhu_minimum', 'kelembaban_rata_rata', 'lama_penyinaran', 'bulan_sin', 'bulan_cos']
     Hasil           : Loss=0.00882, R2=0.529, MAE=2.386, RMSE=4.644, AccWAPE=80.99%
     Catatan         : LSTM Prediksi Cuaca Harian Aceh Utara (window=30 hari)
+[16] 2026-11-21 12:37:24 | LSTM_Weather_Optimized (google_colab) | Commit: 96e173e
+    Perubahan Param : epochs: 40 -> 50; window_size: 30 -> 21; features: ['curah_hujan', 'suhu_rata_rata', 'suhu_maksimal', 'suhu_minimum', 'kelembaban_rata_rata', 'lama_penyinaran', 'bulan_sin', 'bulan_cos'] -> ['curah_hujan', 'suhu_rata_rata', 'suhu_maksimal', 'suhu_minimum', 'kelembaban_rata_rata', 'lama_penyinaran', 'rentang_suhu', 'doy_sin', 'doy_cos', 'roll_hujan_7d', 'roll_lembab_7d', 'roll_sinar_7d', 'loc_L001', 'loc_L002', 'loc_L003', 'loc_L004', 'loc_L005']
+    Hasil           : Loss=0.11189, R2=0.518, MAE=2.131, RMSE=3.158, AccWAPE=81.27%
+    Catatan         : BiLSTM+Attention + RobustScaler + Winsorizing p99 + 7d Rolling (window=21 hari)
+[17] 2026-11-24 20:45:07 | Baseline_RF_Proposal (local) | Commit: 1bc4152
+    Perubahan Param : n_estimators: 200 -> -; max_depth: 15 -> -; min_samples_split: 2 -> -; min_samples_leaf: 1 -> -; class_weight: balanced -> -; rf_search: - -> {'n_estimators': [100, 200, 300, 500], 'max_depth': [None, 10, 15, 20, 30], 'min_samples_split': [2, 5, 10], 'min_samples_leaf': [1, 2, 4], 'max_features': ['sqrt', 'log2', 0.5], 'class_weight': [None, 'balanced', 'balanced_subsample']}; cv_val_years: - -> [2023, 2024]
+    Hasil           : Acc=0.29 (+0.0317), F1=0.1944 (-0.0325), Top-3=0.7133
+    Catatan         : Pipeline proposal, rata-rata 5 seed: accuracy=0.290±0.022, f1_weighted=0.194±0.009, f1_macro=0.247±0.009, top_3_accuracy=0.713±0.025
+[18] 2026-11-24 20:45:07 | Hybrid_LSTM_RF_Proposal (local) | Commit: 1bc4152
+    Perubahan Param : n_estimators: 200 -> -; min_samples_split: 2 -> -; min_samples_leaf: 1 -> -; max_features: 0.5 -> -; max_depth: 15 -> -; class_weight: None -> -; lstm: - -> {'hidden_size_1': 128, 'hidden_size_2': 64, 'embedding_dim': 32, 'dropout': 0.2, 'epochs': 30, 'batch_size': 16, 'learning_rate': 0.001}; proposal: - -> {'train_end_year': 2023, 'val_year': 2024, 'test_year': 2025, 'cv_val_years': [2023, 2024], 'iqr_factor': 1.5, 'seasonal_features': True, 'max_epochs': 300, 'early_stopping_patience': 20, 'rf_search_iter': 20, 'seeds': [42, 43, 44, 45, 46]}; rf_search: - -> {'n_estimators': [100, 200, 300, 500], 'max_depth': [None, 10, 15, 20, 30], 'min_samples_split': [2, 5, 10], 'min_samples_leaf': [1, 2, 4], 'max_features': ['sqrt', 'log2', 0.5], 'class_weight': [None, 'balanced', 'balanced_subsample']}
+    Hasil           : Acc=0.3667 (+0.0167), F1=0.4051 (-0.0012), Top-3=0.8433
+    Catatan         : Pipeline proposal, rata-rata 5 seed: accuracy=0.367±0.039, f1_weighted=0.405±0.043, f1_macro=0.288±0.033, top_3_accuracy=0.843±0.019
 
 ================================================================================
 RIWAYAT COMMIT GIT
 ================================================================================
 Commit  | Tanggal             | Author       | Pesan Commit
 --------------------------------------------------------------------------------
+1bc4152 | 2026-11-24 20:44:15 | baihaqi43043 | tambah pipeline hybrid lstm-rf sesuai proposal (bab III)
+3950191 | 2026-11-24 20:06:21 | baihaqi43043 | tambah data tanah & varietas, batasi pipeline ke 5 lokasi aktif
+d465376 | 2026-11-24 19:56:42 | baihaqi43043 | rapikan reproduksibilitas: data mentah masuk git, preprocessing bilstm satu sumber
+4c1d31b | 2026-11-21 21:04:04 | rahmatsiddiq946 | tambah web dashboard interaktif prediksi cuaca agroklimat
+d9acb9b | 2026-11-21 20:34:00 | rahmatsiddiq946 | update model lstm v1 best aktual data
+cb3afcd | 2026-11-21 20:02:47 | rahmatsiddiq946 | tambahkan hasil training bilstm weather optimized (run 20261121_123724)
+96e173e | 2026-11-21 19:16:19 | rahmatsiddiq946 | perbaiki preprocessing data anomali siklon tropis pada data train dan testing
+c4e8d18 | 2026-11-21 19:07:05 | baihaqi43043 | update dikit lagi
+058c981 | 2026-11-21 19:00:41 | baihaqi43043 | gabung kode
 95ada90 | 2026-11-21 19:00:07 | baihaqi43043 | Merge branch 'develop_rahmat'
 7bacb73 | 2026-11-21 18:32:52 | rahmatsiddiq946 | optimasi lstm dengan winsorizing p99, robustscaler, feature engineering, bilstm+attention dan arsip hasil colab
 a672532 | 2026-11-21 18:05:11 | rahmatsiddiq946 | sederhanakan cell upload data colab di notebook lstm cuaca
