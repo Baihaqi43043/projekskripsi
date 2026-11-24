@@ -1,0 +1,45 @@
+DATA DUMMY MANY-TO-MANY: LOKASI x BULAN TANAM x VARIETAS
+Dibuat oleh: python buat_data_dummy_varietas.py (seed 42, bisa dibuat ulang persis)
+
+STATUS: DUMMY. Skor dan hasil panen dihitung dari rumus berbasis asumsi agronomi umum,
+BUKAN data lapangan. Wajib divalidasi pakar sebelum dipakai sebagai dasar klaim penelitian.
+
+ISI
+- 5 lokasi (L001-L005) x 60 bulan tanam (Jan 2021 - Des 2025) x 25 varietas = 7.500 baris
+- kecocokan_varietas_train.csv : bulan tanam Jan 2021 - Des 2024 (6.000 baris, 80%)
+- kecocokan_varietas_test.csv  : bulan tanam Jan 2025 - Des 2025 (1.500 baris, 20%)
+- kecocokan_varietas_semua.csv : gabungan keduanya (kolom `split` = train/test)
+
+SATU BARIS = satu varietas ditanam di satu lokasi pada satu bulan tanam.
+
+KOLOM
+Identitas      id_lokasi, nama_lokasi, tahun, bulan (= bulan tanam)
+Varietas       id_varietas, nama_varietas, komoditas, umur_panen_hari_num, potensi_hasil_num (ton/ha),
+               kebutuhan_air, ketahanan_hama_skala (1-5), ketinggian_maks_mdpl
+Lahan          ph_tanah, drainase, ketinggian_tempat, risiko_bencana_hama
+Iklim tanam    bulan_tumbuh (umur panen / 30, dibulatkan, 2-4 bulan)
+               hujan_masa_tanam = rata-rata hujan bulanan dari bulan tanam s/d bulan_tumbuh ke depan
+               suhu_masa_tanam  = rata-rata suhu pada periode yang sama
+               (untuk bulan tanam akhir 2025 periode dipotong di Des 2025 karena data 2026 belum ada)
+Komponen skor  s_air, s_suhu, s_ph, s_drainase, s_hama, s_ketinggian (0-1, makin besar makin cocok)
+Target         skor_kecocokan (0-100), hasil_dummy_ton_ha
+Turunan        peringkat (1 = paling cocok di lokasi-bulan itu), varietas_terbaik (True/False), split
+
+RUMUS
+skor = 100 x s_air^0.35 x s_suhu^0.15 x s_ph^0.20 x s_drainase^0.10 x s_hama^0.10 x s_ketinggian^0.10
+       + noise normal (sd 3), dibatasi 0-100
+hasil_dummy_ton_ha = potensi_hasil x skor/100 x noise lognormal (sd 0,08)
+
+Asumsi optimum (lihat konstanta di awal buat_data_dummy_varietas.py):
+- Hujan bulanan optimum: Banyak 230 mm, Sedang 160 mm, Sedikit 100 mm
+- Suhu optimum: Padi 26,5 C, Jagung 27 C, Kedelai 26 C
+- pH optimum: Padi 5,8, Jagung 6,2, Kedelai 6,5
+- Drainase "Rusak" menurunkan kecocokan jagung (0,6) dan kedelai (0,55), padi toleran
+- Risiko hama tinggi menurunkan kecocokan varietas yang ketahanan hamanya rendah
+
+CATATAN PEMAKAIAN
+- Padi paling sering jadi varietas terbaik (281 dari 300 lokasi-bulan) karena Aceh Utara basah dan pH tanahnya
+  5,0-5,6 (di bawah optimum kedelai). Kedelai tidak pernah jadi yang terbaik.
+- Varietas padi dengan kebutuhan air sama punya skor sangat mirip, sehingga peringkat 1 di antara mereka
+  sering ditentukan noise (berganti di 80% bulan berurutan). Evaluasi model sebaiknya memakai
+  skor_kecocokan (regresi) dan metrik peringkat (Top-3), bukan hanya ketepatan peringkat 1.
