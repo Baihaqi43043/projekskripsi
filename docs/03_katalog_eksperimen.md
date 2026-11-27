@@ -271,6 +271,20 @@ Jalur: **A** = pipeline lama (label if-else, `pipelines/arsip_lama/`), **B** = c
   latih LSTM meramal iklim 3–4 bulan, data iklim lebih detail.
 - **Status:** aktif.
 
+## Status reproduksi (diuji 27 Nov 2026)
+
+`python run_all.py` dijalankan penuh dari struktur repo baru (19 langkah, 44,9 menit, tanpa error) dan hasilnya
+dibandingkan dengan folder run di `results/eksperimen/`:
+
+| Eksperimen | Hasil jalan ulang |
+|---|---|
+| E02, E05, E07, E08, E09, E12 (4 run), E13, E14 | Identik (selisih 0) |
+| E06 | Angka identik; hanya nomor run bundle yang berbeda |
+| E11 (1 epoch) | Identik |
+| E10, E11 (5 epoch) | MAE, R², Spearman identik; Top-1/Top-3/irisan berbeda ≤ 1,4 poin persen karena run asli dibuat sebelum pemecah skor seri dijadikan stabil (commit `ebda3d4`). Angka E10 di katalog sudah memakai versi stabil |
+
+Model di `models/` saat ini berasal dari jalan ulang tersebut.
+
 ---
 
 ## Cara menambah eksperimen baru

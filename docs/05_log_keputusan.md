@@ -19,3 +19,4 @@ Keputusan penting beserta alasannya, urut waktu. Tambahkan baris baru di bawah b
 | 25 Nov 2026 | Prediksi hasil 32 dimensi dan cuaca biasa ditampilkan berdampingan | Permintaan tim agar bisa dibandingkan | E13 |
 | 27 Nov 2026 | Repo dirapikan: script per jalur, run dikelompokkan per eksperimen, katalog E01–E14 | Dokumentasi & reproduksi | – |
 | 27 Nov 2026 | Branch `pipeline-proposal` tidak digabung ke `main` | Keputusan tim | – |
+| 27 Nov 2026 | Reproduksi diuji dengan `run_all.py` penuh; semua eksperimen aktif dapat diulang | Bukti hasil tidak bergantung pada kebetulan atau langkah manual | – |

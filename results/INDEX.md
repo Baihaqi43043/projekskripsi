@@ -23,3 +23,6 @@ Riwayat semua run (satu baris per run) ada di `experiment_history.csv`; ringkasa
 
 Run baru otomatis masuk ke folder sesuai variabel lingkungan `EKSPERIMEN` (diatur oleh `run_all.py`);
 tanpa kode, masuk ke `_tanpa_kode/`.
+
+**Reproduksi:** seluruh eksperimen aktif sudah diuji ulang dengan `python run_all.py` pada 27 Nov 2026 dan hasilnya
+identik (rincian di bagian "Status reproduksi" katalog). Model di `models/` berasal dari jalan ulang itu.
