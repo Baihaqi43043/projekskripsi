@@ -1,0 +1,24 @@
+# E02_cuaca_harian_vs_tebakan — dibuat 2026-11-27 13:22
+
+1) Jan-Mar 2025 (450 baris), MAE (R²) terhadap nilai aktual asli
+variabel               |          BiLSTM |     persistence |     klimatologi
+curah_hujan            |   7.078 (-0.04) |   8.582 (-0.25) |   7.946 (-0.06)
+suhu_rata_rata         |   0.353 (+0.89) |   0.364 (+0.88) |   0.354 (+0.89)
+suhu_maksimal          |   0.664 (+0.53) |   0.875 (+0.19) |   0.657 (+0.56)
+suhu_minimum           |   0.413 (+0.89) |   0.469 (+0.86) |   0.538 (+0.82)
+kelembaban_rata_rata   |   2.158 (+0.56) |   2.509 (+0.42) |   2.894 (+0.24)
+lama_penyinaran        |   2.973 (+0.14) |   3.614 (-0.35) |   3.204 (-0.13)
+
+2) 'Akurasi WAPE' bila hanya menebak rata-rata data train (konstan), test 2025
+   curah_hujan             -9.30%
+   suhu_rata_rata          94.80%
+   suhu_maksimal           95.81%
+   suhu_minimum            93.13%
+   kelembaban_rata_rata    95.21%
+   lama_penyinaran         75.63%
+
+3) Tebak hujan / tidak hujan (>= 0,5 mm)
+   proporsi hari hujan 2025           : 75.7%
+   BiLSTM (Jan-Mar 2025)              : 72.7%
+   selalu tebak 'hujan' (Jan-Mar 2025): 72.7%
+   besok = hari ini (2025)            : 82.9%

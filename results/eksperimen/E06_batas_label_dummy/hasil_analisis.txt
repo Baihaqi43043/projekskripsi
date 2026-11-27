@@ -1,0 +1,12 @@
+# E06_batas_label_dummy — dibuat 2026-11-27 13:22
+
+Bundle: run 20261125_004642 | 20 lokasi | 240 lokasi-bulan uji (2025)
+Catatan: Top-1/Top-3 model klasifikasi ada di laporan E05/E09; di sini hanya aturan label.
+
+Aturan label diterapkan ke iklim AKTUAL bulan itu : 100% (label memang dibuat dari situ)
+Aturan label diterapkan ke iklim BULAN SEBELUMNYA : 41%
+Aturan label diterapkan ke ramalan iklim LSTM     : 31%
+
+Error ramalan hujan bulanan: median 80 mm, rata-rata 125 mm
+Batas kelas pada aturan label: 85 / 140 / 210 mm (lebar kelompok 55-70 mm)
+Pita hujan (4 kelompok) tertebak benar oleh ramalan LSTM: 31%

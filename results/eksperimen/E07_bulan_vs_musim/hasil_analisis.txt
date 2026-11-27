@@ -1,0 +1,20 @@
+# E07_bulan_vs_musim — dibuat 2026-11-27 13:22
+
+Lokasi: ['L001', 'L002', 'L003', 'L004', 'L005']
+Rata-rata hujan per bulan (mm): {1: 153, 2: 126, 3: 162, 4: 162, 5: 205, 6: 180, 7: 122, 8: 160, 9: 163, 10: 252, 11: 357, 12: 319}
+
+Variasi antar-tahun (koefisien variasi): per BULAN 52% | per MUSIM 17%
+
+Lhoksukon (L001) - total hujan per musim (mm):
+musim        MT1 Okt-Mar  MT2 Apr-Sep
+tahun_musim                          
+2020              1308.0       1244.0
+2021              1339.0       1031.0
+2022              1433.0        872.0
+2023               996.0        889.0
+2024              1276.0       1101.0
+2025                 NaN        700.0
+
+Lhoksukon - hujan bulan Januari saja (mm): {2020: 46.0, 2021: 175.0, 2022: 110.0, 2023: 210.0, 2024: 74.0, 2025: 184.0}
+
+Jumlah sampel per musim: 55

@@ -1,0 +1,20 @@
+# E14_isi_informasi_lstm — dibuat 2026-11-27 13:22
+
+R² menebak iklim MASA TANAM pada 2025 (Ridge | RF)
+
+  hujan_masa_tanam
+    rata-rata iklim 12 bulan (6 fitur) : [-0.082 -0.367]
+    LSTM bulanan           (32 fitur)   : [-0.028 -0.065]
+    LSTM harian 1 epoch    (32 fitur)   : [0.169 0.161]
+    rata-rata bulan kalender           : 0.118
+
+  suhu_masa_tanam
+    rata-rata iklim 12 bulan (6 fitur) : [0.891 0.781]
+    LSTM bulanan           (32 fitur)   : [0.919 0.968]
+    LSTM harian 1 epoch    (32 fitur)   : [0.967 0.94 ]
+    rata-rata bulan kalender           : 0.099
+
+LSTM bulanan: dimensi selalu 0 = 0/32 | variasi dijelaskan 3 komponen PCA = 95.1%
+
+LSTM harian 1 epoch: dimensi selalu 0 = 0/32 | variasi dijelaskan 3 komponen PCA = 92.0%
+Pola iklim unik: 240 dari 1200 lokasi-bulan
