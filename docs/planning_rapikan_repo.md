@@ -1,6 +1,6 @@
 # Rencana Merapikan Repo & Dokumentasi Eksperimen
 
-Status: **dikerjakan 27 Nov 2026** (tahap 0–6 dan 8 selesai; tahap 7 bersih-bersih menunggu konfirmasi; tahap 9 tanpa merge ke `main`).
+Status: **dikerjakan 27 Nov 2026** (tahap 0–8 selesai; `data/raw copy/` dihapus, model lama di `models/` dipertahankan atas permintaan; tahap 9 tanpa merge ke `main`).
 Tujuan: siapa pun (kamu, Rahmat, dosen pembimbing) bisa membuka repo ini, mengerti apa saja yang sudah
 dicoba, menemukan hasilnya, dan menjalankan ulang setiap eksperimen dengan satu perintah.
 
