@@ -9,6 +9,7 @@ Membuat ulang (perlu Node.js):
 
 ```bash
 npm install docx@9.5.1
+# Pratinjau tanpa Microsoft Word: D:WordCraftwordcraft-cli.exe render <file.docx> hal1.png --page 1
 node docs/laporan/buat_laporan_word.js docs/laporan/Ringkasan_Eksperimen_Hybrid.docx
 ```
 

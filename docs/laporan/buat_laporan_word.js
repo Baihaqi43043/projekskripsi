@@ -16,7 +16,7 @@ const W = 9026; // lebar isi A4, margin 1 inci
 
 // ------------------------------------------------------------------ helper
 const runs = parts => (Array.isArray(parts) ? parts : [parts]).map(t => (typeof t === "string" ? new TextRun(t) : t));
-const p = (text, opts = {}) => new Paragraph({ spacing: { after: 120 }, ...opts, children: runs(text) });
+const p = (text, opts = {}) => new Paragraph({ spacing: { before: 100, after: 120 }, ...opts, children: runs(text) });
 const b = t => new TextRun({ text: t, bold: true });
 const i = t => new TextRun({ text: t, italics: true });
 const h1 = t => new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun(t)] });
@@ -81,7 +81,7 @@ const TANAH9 = "9 fitur tanah/lokasi: tekstur, pH, N*, P*, K*, C-organik, draina
 const VAR8 = "8 karakteristik varietas: umur panen, potensi hasil, ketahanan hama, kebutuhan air, ketinggian maksimal, komoditas (padi/jagung/kedelai)";
 const SPLIT = "Kronologis menurut tahun bulan target: train 2021–2023, validasi 2024, uji 2025 (dipakai sekali di akhir)";
 const LSTM_ARS = "LSTM 128 unit → LSTM 64 unit (dropout 0,2) → Dense 32 (ReLU) = vektor temporal 32 angka";
-const RF_TUNING = "Random Forest, RandomizedSearchCV, validasi per tahun (2023, 2024), refit di train + validasi; 5 seed (42–46)";
+const RF_TUNING = "tuning RandomizedSearchCV dengan validasi per tahun (2023, 2024), refit di train + validasi; 5 seed (42–46)";
 
 // ------------------------------------------------------------------ isi
 const children = [
@@ -122,8 +122,6 @@ const children = [
     ["E13", "Hasil dengan cuaca biasa", "Many-to-many + cuaca", "t/ha", "MAE 1,74 vs Hybrid 1,98", "Cuaca biasa > Hybrid"],
     ["E14", "Kenapa RF saja unggul", "Vektor LSTM & cuaca", "R² informasi iklim", "LSTM ≥ rata-rata", "Overfit, bukan kurang info"],
   ], [700, 1700, 1800, 1300, 1800, 1726], { size: 17 }),
-
-  pageBreak(),
 
   // ---------------------------------------------------------------- E01
   ...eksperimen("E01", "Audit hasil lama", "historis, tidak dipakai", {
@@ -402,7 +400,7 @@ const children = [
     ],
     proses: [
       ["Pemrosesan", "Identik dengan E05 (IQR: 61 nilai dibatasi)"],
-      ["Model", `${LSTM_ARS}; ${RF_TUNING}`],
+      ["Model", `${LSTM_ARS}; Random Forest dengan ${RF_TUNING}`],
       ["Script", "python -m pipelines.klasifikasi_proposal.train_hybrid_proposal"],
     ],
     output: [
