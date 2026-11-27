@@ -9,6 +9,6 @@ __pycache__/
 data/processed/
 
 # Bobot model (dibagikan lewat Google Drive / rilis, bukan Git)
-models/
+/models/
 mlruns/
 .cache/
