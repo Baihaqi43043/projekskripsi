@@ -60,6 +60,44 @@ function table(rows, widths, { numCols = [], highlight = [], size = 19, header =
     })),
   });
 }
+
+// ------------------------------------------------------------------ kolom persen
+// P(col): nilai pecahan 0-1 (Accuracy, F1, Top-3, ...) ditampilkan juga dalam persen.
+// E(col, rata): error relatif = MAE / rata-rata nilai sebenarnya × 100%.
+const angka = s => parseFloat(String(s).replace(/−/g, "-").replace(",", "."));
+const fmt1 = x => x.toFixed(1).replace(".", ",").replace("-", "−");
+const persen = cell => {
+  const m = String(cell).match(/^\s*([−-]?\d+,\d+)(?:\s*±\s*(\d+,\d+))?/);
+  if (!m) return "";
+  return fmt1(angka(m[1]) * 100) + "%"; // simpangan baku tetap di kolom angka desimal
+};
+const errRel = (cell, rata) => {
+  const m = String(cell).match(/^\s*(\d+,\d+)/);
+  return m ? fmt1((angka(m[1]) / rata) * 100) + "%" : "";
+};
+const P = (col, judul) => ({ col, judul, fn: c => persen(c) });
+const E = (col, rata, judul) => ({ col, judul, fn: c => errRel(c, rata) });
+const EB = (col, rataPerBaris, judul) => ({ col, judul, fn: (c, r) => errRel(c, rataPerBaris[r - 1]) });
+// Rata-rata nilai aktual Jan-Mar 2025 per variabel (untuk error relatif E02)
+const RATA_E02 = [8.371, 25.740, 28.265, 23.856, 86.515, 16.986];
+
+function tabelPersen(rows, widths, opts = {}, sisip = []) {
+  let R = rows.map(r => [...r]);
+  let Wd = [...widths];
+  let num = new Set(opts.numCols || []);
+  for (const s of [...sisip].sort((a, b) => b.col - a.col)) {
+    R = R.map((row, r) => [...row.slice(0, s.col + 1), r === 0 ? s.judul : s.fn(row[s.col], r), ...row.slice(s.col + 1)]);
+    Wd.splice(s.col + 1, 0, 1000);
+    num = new Set([...num].map(c => (c > s.col ? c + 1 : c)));
+    num.add(s.col + 1);
+  }
+  const total = Wd.reduce((a, c) => a + c, 0);
+  Wd = Wd.map(w => Math.round((w * W) / total));
+  Wd[0] += W - Wd.reduce((a, c) => a + c, 0);
+  const ukuran = R[0].length >= 10 ? 15 : R[0].length >= 8 ? 16 : opts.size || 18;
+  return table(R, Wd, { ...opts, numCols: [...num], size: ukuran });
+}
+
 // Tabel 2 kolom "label | isi" untuk Data input, Data yang diproses, Output
 const daftar = rows => table(rows, [2400, W - 2400], { header: false, labelCol: true });
 
@@ -89,6 +127,7 @@ const children = [
   p([i("Sistem rekomendasi varietas tanaman pangan · Kabupaten Aceh Utara · 27 November 2026")]),
   kotak("Status: prototipe. ", "Label varietas dibuat dengan aturan dummy (E01–E09) atau rumus dummy (E10–E14), dan 5 dari 9 fitur tanah (N, P, K, drainase, risiko hama) masih dummy. Angka di dokumen ini menguji apakah pipeline bekerja benar dan belum boleh diklaim sebagai temuan penelitian.", "FFF4DC", "C9A24A"),
   p("Setiap eksperimen disajikan dengan format yang sama: (1) data input, (2) data yang diproses, (3) output, (4) akurasi model, dan (5) ringkasan apa yang dilakukan dan hasilnya. Semua eksperimen aktif dapat diulang dengan perintah python run_all.py; rincian teknis ada di docs/03_katalog_eksperimen.md."),
+  p([b("Cara membaca kolom persen. "), new TextRun("Kolom bertanda (%) pada metrik klasifikasi (Accuracy, Precision, Recall, F1, Top-3) adalah nilai pecahan × 100, misalnya 0,367 = 36,7%; makin besar makin baik. Untuk prediksi angka (skor, hasil t/ha, umur hari, cuaca) dipakai error relatif = MAE ÷ rata-rata nilai sebenarnya × 100%; makin kecil makin baik.")]),
 
   h1("Gambaran umum data"),
   table([
@@ -107,19 +146,19 @@ const children = [
   h1("Ringkasan semua eksperimen"),
   table([
     ["Kode", "Eksperimen", "Input utama", "Output", "Akurasi utama", "Hasil"],
-    ["E01", "Audit hasil lama", "Log & kode lama", "Daftar masalah", "Log lama: Acc 0,425", "Evaluasi lama bocor"],
+    ["E01", "Audit hasil lama", "Log & kode lama", "Daftar masalah", "Log lama: Acc 42,5%", "Evaluasi lama bocor"],
     ["E02", "Cuaca harian vs tebakan", "Harian 5 lokasi, prediksi BiLSTM", "MAE per variabel", "Suhu: BiLSTM ≈ klimatologi", "BiLSTM tidak lebih baik untuk suhu"],
-    ["E03", "Reproduksi pipeline lama", "Bulanan 20/5 lokasi", "Metrik ulang", "Hybrid 0,367 (log 0,425)", "Hasil berubah antar-komputer"],
+    ["E03", "Reproduksi pipeline lama", "Bulanan 20/5 lokasi", "Metrik ulang", "Hybrid 36,7% (log 42,5%)", "Hasil berubah antar-komputer"],
     ["E04", "Cek embedding LSTM", "Vektor 32 jalur lama", "Analisis PCA", "4 komponen = 99,7%", "32 angka ≈ 4 informasi"],
-    ["E05", "Proposal, 5 lokasi", "Bulanan 5 lokasi + tanah", "Top-3 varietas", "F1 0,405; Top-3 0,843", "Hybrid terbaik di F1 & Top-3"],
+    ["E05", "Proposal, 5 lokasi", "Bulanan 5 lokasi + tanah", "Top-3 varietas", "F1 40,5%; Top-3 84,3%", "Hybrid terbaik di F1 & Top-3"],
     ["E06", "Batas label dummy", "Model E05/E09", "Pembanding naif", "Bulan lalu 43%", "Akurasi dibatasi label"],
     ["E07", "Bulan vs musim", "Bulanan 5 lokasi", "Variasi hujan", "52% vs 17%", "Per musim lebih stabil"],
-    ["E08", "Fitur harian", "E05 + 5 fitur harian", "Top-3 varietas", "F1 0,376", "Tidak membantu"],
-    ["E09", "Proposal, 20 lokasi", "Bulanan 20 lokasi + tanah", "Top-3 + model web", "F1 0,388; F1 (m) 0,332", "Hybrid terbaik semua metrik"],
-    ["E10", "Skor kecocokan 25 varietas", "Many-to-many + vektor LSTM", "Skor 0–100", "Spearman 0,30 vs RF 0,51", "RF saja > Hybrid"],
+    ["E08", "Fitur harian", "E05 + 5 fitur harian", "Top-3 varietas", "F1 37,6%", "Tidak membantu"],
+    ["E09", "Proposal, 20 lokasi", "Bulanan 20 lokasi + tanah", "Top-3 + model web", "F1 38,8%; F1 (m) 33,2%", "Hybrid terbaik semua metrik"],
+    ["E10", "Skor kecocokan 25 varietas", "Many-to-many + vektor LSTM", "Skor 0–100", "Komoditas tepat 94%; Spearman 0,30 (RF 0,51)", "RF saja > Hybrid"],
     ["E11", "LSTM harian untuk RF", "Harian 20 lokasi", "Vektor bulanan", "Spearman 0,28", "Tidak lebih baik"],
-    ["E12", "Hasil & umur panen", "Many-to-many", "t/ha dan hari", "Umur MAE 1,76 hari", "Umur baik; hasil < tebakan"],
-    ["E13", "Hasil dengan cuaca biasa", "Many-to-many + cuaca", "t/ha", "MAE 1,74 vs Hybrid 1,98", "Cuaca biasa > Hybrid"],
+    ["E12", "Hasil & umur panen", "Many-to-many", "t/ha dan hari", "Umur MAE 1,76 hari (error 1,7%)", "Umur baik; hasil < tebakan"],
+    ["E13", "Hasil dengan cuaca biasa", "Many-to-many + cuaca", "t/ha", "Error 50,4% vs Hybrid 57,4%", "Cuaca biasa > Hybrid"],
     ["E14", "Kenapa RF saja unggul", "Vektor LSTM & cuaca", "R² informasi iklim", "LSTM ≥ rata-rata", "Overfit, bukan kurang info"],
   ], [700, 1700, 1800, 1300, 1800, 1726], { size: 17 }),
 
@@ -138,13 +177,13 @@ const children = [
       ["Folder", "results/eksperimen/E01_audit_hasil_lama/"],
     ],
     akurasi: [
-      table([
+      tabelPersen([
         ["Model (log lama)", "Accuracy", "F1 (w)", "Top-3"],
         ["Baseline RF, 20 lokasi", "0,258", "0,227", "0,675"],
         ["Hybrid LSTM + RF, 20 lokasi", "0,425", "0,462", "0,625"],
         ["Hybrid tuned, 20 lokasi", "0,350", "0,406", "0,663"],
         ["BiLSTM cuaca harian", "\"akurasi WAPE 81,27%\"", "", ""],
-      ], [4226, 1600, 1600, 1600], { numCols: [1, 2, 3] }),
+      ], [4226, 1600, 1600, 1600], { numCols: [1, 2, 3] }, [P(1, "Acc (%)"),P(2, "F1 (%)"),P(3, "Top-3 (%)")]),
       gap(),
       table([
         ["Masalah ditemukan", "Akibat"],
@@ -171,7 +210,7 @@ const children = [
     ],
     output: [["File", "results/eksperimen/E02_cuaca_harian_vs_tebakan/hasil_analisis.txt"]],
     akurasi: [
-      table([
+      tabelPersen([
         ["Variabel (MAE)", "BiLSTM", "Persistence", "Klimatologi"],
         ["Curah hujan (mm)", "7,08 (R² −0,04)", "8,58", "7,95"],
         ["Suhu rata-rata (°C)", "0,353", "0,364", "0,354"],
@@ -179,7 +218,7 @@ const children = [
         ["Suhu minimum (°C)", "0,413", "0,469", "0,538"],
         ["Kelembaban (%)", "2,16", "2,51", "2,89"],
         ["Radiasi (MJ/m²/hari)", "2,97", "3,61", "3,20"],
-      ], [3026, 2000, 2000, 2000], { numCols: [1, 2, 3] }),
+      ], [3026, 2000, 2000, 2000], { numCols: [1, 2, 3] }, [EB(1, RATA_E02, "BiLSTM (error %)"), EB(2, RATA_E02, "Persistence (error %)"), EB(3, RATA_E02, "Klimatologi (error %)")]),
       gap(),
       table([
         ["Tebak hujan / tidak hujan", "Akurasi"],
@@ -201,14 +240,14 @@ const children = [
     proses: [["Langkah", "Menjalankan ulang pipeline lama di laptop proyek, dua kali, lalu dibandingkan dengan log"]],
     output: [["Hasil", "Metrik ulang Baseline RF, Hybrid, Hybrid tuned"]],
     akurasi: [
-      table([
+      tabelPersen([
         ["Percobaan", "Accuracy", "F1 (w)", "Top-3", "Catatan"],
         ["Baseline RF, 20 lokasi", "0,258", "0,227", "0,675", "Sama persis dengan log"],
         ["Hybrid, 20 lokasi", "0,367", "0,374", "0,583", "Log: 0,425 (beda versi torch/hardware)"],
         ["Baseline RF, 5 lokasi", "0,183", "0,163", "0,633", ""],
         ["Hybrid, 5 lokasi", "0,317", "0,352", "0,900", ""],
         ["Hybrid tuned, 5 lokasi", "0,300", "0,334", "0,850", "Tuning lebih buruk"],
-      ], [2626, 1100, 1100, 1100, 3100], { numCols: [1, 2, 3] }),
+      ], [2626, 1100, 1100, 1100, 3100], { numCols: [1, 2, 3] }, [P(1, "Acc (%)"),P(2, "F1 (%)"),P(3, "Top-3 (%)")]),
     ],
     ringkasan: "Baseline bisa diulang persis, tetapi Hybrid berubah antar-komputer. Karena itu semua eksperimen berikutnya diulang dengan 5 seed dan dilaporkan rata-rata ± simpangan baku.",
   }),
@@ -252,7 +291,7 @@ const children = [
     ],
     akurasi: [
       h3("Ringkasan metrik (uji 2025, rata-rata ± std 5 seed)"),
-      table([
+      tabelPersen([
         ["Metrik", "Hybrid LSTM + RF", "RF saja", "LSTM saja", "Terbaik"],
         ["Accuracy", "0,367 ± 0,039", "0,290 ± 0,022", "0,370 ± 0,062", "LSTM ≈ Hybrid"],
         ["Precision (w)", "0,476 ± 0,051", "0,156 ± 0,006", "0,283 ± 0,067", "Hybrid"],
@@ -263,17 +302,17 @@ const children = [
         ["F1-Score (m)", "0,288 ± 0,033", "0,247 ± 0,009", "0,206 ± 0,053", "Hybrid"],
         ["Top-3", "0,843 ± 0,019", "0,713 ± 0,025", "0,670 ± 0,036", "Hybrid"],
         ["Top-5", "0,997 ± 0,007", "1,000 ± 0,000", "0,813 ± 0,018", "kurang informatif"],
-      ], [1726, 1900, 1900, 1900, 1600], { numCols: [1, 2, 3] }),
+      ], [1726, 1900, 1900, 1900, 1600], { numCols: [1, 2, 3] }, [P(1, "Hybrid (%)"),P(2, "RF saja (%)"),P(3, "LSTM saja (%)")]),
       p([i("Accuracy selalu sama dengan Recall (w). Top-5 RF = 1,000 tidak berarti RF sangat baik: dengan 5 lokasi, 5 tebakan hampir pasti mencakup label yang benar.")]),
       h3("F1-Score (w) per seed"),
-      table([
+      tabelPersen([
         ["Seed", "Hybrid", "LSTM saja", "RF saja"],
         ["42", "0,369", "0,386", "0,200"],
         ["43", "0,418", "0,366", "0,186"],
         ["44", "0,475", "0,265", "0,204"],
         ["45", "0,377", "0,253", "0,183"],
         ["46", "0,386", "0,267", "0,199"],
-      ], [2026, 2333, 2333, 2334], { numCols: [1, 2, 3] }),
+      ], [2026, 2333, 2333, 2334], { numCols: [1, 2, 3] }, [P(1, "Hybrid (%)"),P(2, "LSTM saja (%)"),P(3, "RF saja (%)")]),
       h3("Kinerja per varietas (Hybrid, seed 42)"),
       table([
         ["Varietas", "Jumlah uji", "Precision", "Recall", "F1 Hybrid", "F1 RF", "F1 LSTM"],
@@ -378,13 +417,13 @@ const children = [
     ],
     output: [["File", "results/eksperimen/E08_fitur_harian_cara_b/"]],
     akurasi: [
-      table([
+      tabelPersen([
         ["Model", "Accuracy", "F1 (w)", "F1 (m)", "Top-3"],
         ["Hybrid tanpa fitur harian (E05)", "0,367", "0,405", "0,288", "0,843"],
         ["Hybrid + fitur harian", "0,357 ± 0,048", "0,376 ± 0,053", "0,264", "0,863"],
         ["LSTM saja + fitur harian", "0,387", "0,311", "0,214", "0,710"],
         ["RF saja", "0,290", "0,194", "0,247", "0,713"],
-      ], [3226, 1500, 1500, 1300, 1500], { numCols: [1, 2, 3, 4] }),
+      ], [3226, 1500, 1500, 1300, 1500], { numCols: [1, 2, 3, 4] }, [P(1, "Acc (%)"),P(2, "F1 w (%)"),P(3, "F1 m (%)"),P(4, "Top-3 (%)")]),
       p("F1 (w) Hybrid naik hanya di 1 dari 5 seed; MAE ramalan iklim LSTM memburuk dari 0,44 menjadi 0,48."),
     ],
     ringkasan: "Menambah rangkuman data harian tidak meningkatkan Hybrid secara konsisten. Dengan 180 sampel train, input yang lebih banyak membuat model lebih mudah overfit, dan informasi hujan bulan depan tetap tidak ada di data harian bulan sebelumnya.",
@@ -409,12 +448,12 @@ const children = [
       ["File", "results/eksperimen/E09_proposal_20_lokasi/"],
     ],
     akurasi: [
-      table([
+      tabelPersen([
         ["Model", "Accuracy", "Precision (w)", "F1 (w)", "F1 (m)", "Top-3"],
         ["Hybrid LSTM + RF", "0,367 ± 0,033", "0,461", "0,388 ± 0,022", "0,332 ± 0,017", "0,788 ± 0,053"],
         ["RF saja", "0,313 ± 0,016", "0,215", "0,243 ± 0,016", "0,241", "0,676 ± 0,014"],
         ["LSTM saja", "0,345 ± 0,034", "0,204", "0,246 ± 0,028", "0,119", "0,545 ± 0,034"],
-      ], [2026, 1400, 1300, 1500, 1300, 1500], { numCols: [1, 2, 3, 4, 5], highlight: [1] }),
+      ], [2026, 1400, 1300, 1500, 1300, 1500], { numCols: [1, 2, 3, 4, 5], highlight: [1] }, [P(1, "Acc (%)"),P(2, "Prec (%)"),P(3, "F1 w (%)"),P(4, "F1 m (%)"),P(5, "Top-3 (%)")]),
     ],
     ringkasan: "Dengan 20 lokasi, Hybrid menjadi yang terbaik di semua metrik termasuk Accuracy, dan F1 (m) naik dari 0,288 ke 0,332. Epoch terbaik LSTM hanya 3–5 karena 20 kecamatan hanya memiliki 2 seri iklim, sehingga LSTM cepat overfit.",
   }),
@@ -438,12 +477,21 @@ const children = [
       ["File", "results/eksperimen/E10_rf_kecocokan_varietas/"],
     ],
     akurasi: [
-      table([
-        ["Model", "MAE", "R²", "MAE normal", "R² normal", "Spearman normal", "Top-3 normal", "Komoditas tepat"],
-        ["Hybrid", "25,6", "−0,18", "17,5", "−0,16", "0,30", "0,19", "0,94"],
-        ["RF saja", "23,3", "0,01", "14,4", "0,24", "0,51", "0,27", "0,93"],
-        ["Tanpa iklim", "25,0", "−0,08", "16,9", "−0,04", "0,37", "0,18", "0,94"],
-      ], [1526, 900, 900, 1100, 1050, 1250, 1150, 1150], { numCols: [1, 2, 3, 4, 5, 6, 7], highlight: [2], size: 18 }),
+      tabelPersen([
+        ["Model", "MAE", "R²", "MAE normal", "R² normal"],
+        ["Hybrid", "25,6", "−0,18", "17,5", "−0,16"],
+        ["RF saja", "23,3", "0,01", "14,4", "0,24"],
+        ["Tanpa iklim", "25,0", "−0,08", "16,9", "−0,04"],
+      ], [2226, 1300, 1100, 1300, 1100], { numCols: [1, 2, 3, 4], highlight: [2] },
+      [E(1, 44.978, "Error relatif (%)"), E(3, 59.478, "Error relatif normal (%)")]),
+      gap(),
+      tabelPersen([
+        ["Model", "Spearman normal", "Top-3 memuat terbaik (normal)", "Komoditas tepat (normal)"],
+        ["Hybrid", "0,30", "0,19", "0,94"],
+        ["RF saja", "0,51", "0,27", "0,93"],
+        ["Tanpa iklim", "0,37", "0,18", "0,94"],
+      ], [2226, 1600, 1800, 1800], { numCols: [1, 2, 3], highlight: [2] },
+      [P(2, "Top-3 (%)"), P(3, "Komoditas (%)")]),
       p("Kontribusi fitur Hybrid: varietas 48%, LSTM 38%, musim 9%, tanah 5%."),
     ],
     ringkasan: "Model dilatih menilai ke-25 varietas memakai karakteristik varietas (Tujuan 2 proposal). Komoditas yang dipilih tepat sekitar 93–94%, tetapi peringkat varietas di dalam satu komoditas masih lemah. Random Forest dengan rata-rata iklim biasa mengungguli Hybrid.",
@@ -467,7 +515,7 @@ const children = [
         ["Epoch terpilih di validasi", "1", "1"],
         ["MSE validasi epoch 1 → 5", "0,439 → 0,496", "0,439"],
         ["MAE ramalan hujan harian (uji)", "6,19 mm (persistence 7,68)", "6,19 mm"],
-        ["RF skor: MAE normal", "17,3", "17,3"],
+        ["RF skor: MAE normal (error relatif)", "17,3 (29,1%)", "17,3 (29,1%)"],
         ["RF skor: Spearman normal", "0,28", "0,28"],
         ["Acuan RF saja: Spearman normal", "0,51", "0,51"],
       ], [4026, 2500, 2500], { numCols: [1, 2] }),
@@ -491,14 +539,14 @@ const children = [
       ["File", "results/eksperimen/E12_prediksi_hasil_umur/"],
     ],
     akurasi: [
-      table([
+      tabelPersen([
         ["Model", "Hasil MAE (t/ha)", "Hasil R²", "Hasil MAE normal", "Umur MAE (hari)", "Umur R²"],
         ["Tebakan tanpa model", "1,93", "0,25", "1,19", "4,07", "0,85"],
         ["Hybrid, LSTM bulanan", "1,98", "0,20", "1,35", "1,76", "0,98"],
         ["Hybrid, LSTM harian 1 epoch", "1,91", "0,25", "1,31", "1,77", "0,98"],
         ["RF saja", "1,79", "0,33", "1,11", "2,07", "0,97"],
         ["Tanpa iklim", "1,91", "0,27", "1,28", "1,74", "0,98"],
-      ], [2626, 1300, 1000, 1500, 1500, 1100], { numCols: [1, 2, 3, 4, 5] }),
+      ], [2626, 1300, 1000, 1500, 1500, 1100], { numCols: [1, 2, 3, 4, 5] }, [E(1, 3.45, "Hasil error (%)"),E(3, 4.541, "Normal error (%)"),E(4, 101.695, "Umur error (%)")]),
       p("Kontribusi fitur Hybrid: hasil panen → varietas 82%, LSTM 13%; umur panen → varietas 90%, LSTM 10%."),
     ],
     ringkasan: "Umur panen tertebak hingga batas noise data dummy (±2 hari), dan bulan tanam saja sudah cukup. Untuk hasil panen, Hybrid belum mengalahkan tebakan sederhana, sedangkan RF saja paling baik.",
@@ -520,13 +568,13 @@ const children = [
       ["File", "results/eksperimen/E13_hasil_panen_cuaca_biasa/"],
     ],
     akurasi: [
-      table([
+      tabelPersen([
         ["Set fitur", "MAE validasi", "MAE uji", "R² uji", "MAE normal", "R² normal"],
         ["C1 rata-rata 12 bulan", "1,07", "1,79", "0,33", "1,11", "0,72"],
         ["C2 + rata-rata 3 bulan (dipilih)", "0,99", "1,74", "0,39", "1,30", "0,61"],
         ["C3 + normal iklim masa tanam", "1,02", "1,81", "0,35", "1,25", "0,65"],
         ["Acuan: Hybrid 32 dimensi (E12)", "–", "1,98", "0,20", "1,35", "0,58"],
-      ], [3026, 1200, 1100, 1100, 1300, 1300], { numCols: [1, 2, 3, 4, 5], highlight: [2] }),
+      ], [3026, 1200, 1100, 1100, 1300, 1300], { numCols: [1, 2, 3, 4, 5], highlight: [2] }, [E(2, 3.45, "Error uji (%)"),E(4, 4.541, "Error normal (%)")]),
     ],
     ringkasan: "Beberapa angka cuaca yang mudah dibaca menghasilkan prediksi hasil panen lebih baik daripada 32 angka vektor LSTM (MAE 1,74 vs 1,98 t/ha). Tanpa bulan hujan ekstrem, C1 paling baik, sehingga keduanya perlu dilaporkan.",
   }),
@@ -577,6 +625,8 @@ const children = [
     ["Normal", "Evaluasi tanpa bulan tanam yang kena hujan ekstrem November 2025."],
     ["Seed", "Angka acak awal; model dilatih 5 kali (42–46) dan dilaporkan rata-rata ± std."],
     ["Persistence / klimatologi", "Tebakan \"sama dengan sebelumnya\" / rata-rata tanggal atau bulan yang sama di tahun lain."],
+    ["Kolom (%)", "Metrik klasifikasi dalam persen: nilai pecahan × 100 (0,367 = 36,7%). Makin besar makin baik."],
+    ["Error relatif (%)", "MAE dibagi rata-rata nilai sebenarnya × 100%. Contoh: MAE hasil 1,74 t/ha dengan rata-rata 3,45 t/ha = 50,4%. Makin kecil makin baik."],
   ], [2526, 6500]),
   gap(),
   p([i("Sumber angka: results/eksperimen/<kode>/ dan docs/03_katalog_eksperimen.md (branch pipeline-proposal). Semua eksperimen aktif dapat diulang dengan python run_all.py.")]),
