@@ -191,7 +191,7 @@ Jalur: **A** = pipeline lama (label if-else, `pipelines/arsip_lama/`), **B** = c
 
 | Model | MAE | R² | MAE normal | R² normal | Spearman normal | Top-3 memuat terbaik (normal) | Komoditas tepat (normal) |
 |---|---|---|---|---|---|---|---|
-| Hybrid (LSTM + tanah + varietas) | 25,6 | −0,18 | 17,5 | −0,16 | 0,30 | 0,20 | 0,94 |
+| Hybrid (LSTM + tanah + varietas) | 25,6 | −0,18 | 17,5 | −0,16 | 0,30 | 0,19 | 0,94 |
 | **RF saja (rata-rata iklim)** | **23,3** | **0,01** | **14,4** | **0,24** | **0,51** | **0,27** | 0,93 |
 | Tanpa iklim | 25,0 | −0,08 | 16,9 | −0,04 | 0,37 | 0,18 | 0,94 |
 
