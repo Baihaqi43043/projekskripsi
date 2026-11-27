@@ -1,5 +1,5 @@
 DATA DUMMY MANY-TO-MANY: LOKASI x BULAN TANAM x VARIETAS
-Dibuat oleh: python buat_data_dummy_varietas.py (seed 42, bisa dibuat ulang persis)
+Dibuat oleh: python -m pipelines.data.buat_data_dummy_varietas (seed 42, bisa dibuat ulang persis)
 
 STATUS: DUMMY. Skor dan hasil panen dihitung dari rumus berbasis asumsi agronomi umum,
 BUKAN data lapangan. Wajib divalidasi pakar sebelum dipakai sebagai dasar klaim penelitian.
